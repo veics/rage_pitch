@@ -1,0 +1,931 @@
+openapi: 3.1.0
+info:
+  title: RAGE Network Layer API
+  version: 0.2.0
+  description: |
+    P2P networking, federation, and distributed system management for RAGE.
+    
+    This API provides endpoints for:
+    - Peer discovery and management
+    - Node registration and health checks
+    - Federated queries across organizations
+    - Replication and synchronization
+    - Trust relationship management
+  contact:
+    name: RAGE Team
+    url: https://github.com/rage/rage
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://rage.example.com/api/v1
+    description: Production
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+tags:
+  - name: Network
+    description: P2P network management
+  - name: Federation
+    description: Cross-organization federation
+  - name: Discovery
+    description: Peer discovery and bootstrap
+  - name: Replication
+    description: Content replication and sync
+  - name: Trust
+    description: Trust relationship management
+
+paths:
+  # ===== NETWORK ENDPOINTS =====
+  
+  /network/peers:
+    get:
+      summary: List connected peers
+      tags: [Network]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [connected, disconnected, all]
+            default: connected
+        - name: organization
+          in: query
+          description: Filter by organization ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of peers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  peers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Peer'
+                  total:
+                    type: integer
+  
+  /network/peers/{peer_id}:
+    get:
+      summary: Get peer details
+      tags: [Network]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: peer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Peer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeerDetail'
+    
+    delete:
+      summary: Disconnect from peer
+      tags: [Network]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: peer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Peer disconnected
+  
+  /network/connect:
+    post:
+      summary: Connect to a peer
+      tags: [Network]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [address]
+              properties:
+                address:
+                  type: string
+                  example: "/ip4/10.0.1.5/tcp/4001/p2p/12D3KooWA8..."
+                trust_on_connect:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Connection established
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Peer'
+  
+  /network/info:
+    get:
+      summary: Get local node network info
+      tags: [Network]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Node network information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeInfo'
+  
+  /network/bandwidth:
+    get:
+      summary: Get bandwidth statistics
+      tags: [Network]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [1h, 6h, 24h, 7d]
+            default: 1h
+      responses:
+        '200':
+          description: Bandwidth statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BandwidthStats'
+  
+  # ===== DISCOVERY ENDPOINTS =====
+  
+  /network/bootstrap:
+    get:
+      summary: Get bootstrap peers
+      tags: [Discovery]
+      description: Returns a list of peers to bootstrap the P2P network
+      responses:
+        '200':
+          description: Bootstrap peer list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  peers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BootstrapPeer'
+  
+  /network/register:
+    post:
+      summary: Register node with discovery service
+      tags: [Discovery]
+      security:
+        - certificateAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeRegistration'
+      responses:
+        '201':
+          description: Node registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  node_id:
+                    type: string
+                  registered_at:
+                    type: string
+                    format: date-time
+  
+  /network/announce:
+    post:
+      summary: Announce node capabilities
+      tags: [Discovery]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+                    enum: [storage, search, federation, cdn]
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Announcement broadcasted
+  
+  # ===== FEDERATION ENDPOINTS =====
+  
+  /federation/query:
+    post:
+      summary: Execute federated query
+      tags: [Federation]
+      security:
+        - certificateAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FederatedQuery'
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FederatedResults'
+        '403':
+          description: Query denied by ACL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /federation/trust:
+    get:
+      summary: List trusted organizations
+      tags: [Trust, Federation]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Trusted organizations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trusts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TrustRelationship'
+    
+    post:
+      summary: Initiate trust relationship
+      tags: [Trust, Federation]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustRequest'
+      responses:
+        '201':
+          description: Trust request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trust_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [pending, active]
+  
+  /federation/trust/{trust_id}:
+    get:
+      summary: Get trust relationship details
+      tags: [Trust, Federation]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: trust_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Trust relationship
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustRelationship'
+    
+    patch:
+      summary: Update trust relationship
+      tags: [Trust, Federation]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: trust_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, suspended, revoked]
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Trust updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustRelationship'
+    
+    delete:
+      summary: Revoke trust relationship
+      tags: [Trust, Federation]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: trust_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Trust revoked
+  
+  /federation/trust/approve:
+    post:
+      summary: Approve incoming trust request
+      tags: [Trust, Federation]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trust_id]
+              properties:
+                trust_id:
+                  type: string
+                  format: uuid
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+                sharing_policy_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Trust approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustRelationship'
+  
+  # ===== REPLICATION ENDPOINTS =====
+  
+  /network/sync/status:
+    get:
+      summary: Get synchronization status
+      tags: [Replication]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatus'
+  
+  /network/sync/trigger:
+    post:
+      summary: Trigger manual sync
+      tags: [Replication]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                peer_id:
+                  type: string
+                  description: Specific peer to sync with (optional)
+                full_sync:
+                  type: boolean
+                  default: false
+      responses:
+        '202':
+          description: Sync triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sync_id:
+                    type: string
+                  status:
+                    type: string
+  
+  /network/replication/status:
+    get:
+      summary: Get replication status for all chunks
+      tags: [Replication]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chunk_id
+          in: query
+          description: Filter by specific chunk
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Replication status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplicationStatus'
+  
+  /network/replication/policy:
+    get:
+      summary: Get replication policies
+      tags: [Replication]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Replication policies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  default_factor:
+                    type: integer
+                  policies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReplicationPolicy'
+    
+    post:
+      summary: Create replication policy
+      tags: [Replication]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplicationPolicy'
+      responses:
+        '201':
+          description: Policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplicationPolicy'
+  
+  # ===== WEBSOCKET ENDPOINTS =====
+  
+  /network/ws/sync:
+    get:
+      summary: WebSocket for real-time sync
+      tags: [Replication]
+      security:
+        - bearerAuth: []
+      responses:
+        '101':
+          description: WebSocket connection established
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebSocketMessage'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    
+    certificateAuth:
+      type: mutualTLS
+      description: Client certificate authentication for P2P and federation
+  
+  schemas:
+    Peer:
+      type: object
+      properties:
+        peer_id:
+          type: string
+          example: "12D3KooWA8EXV3KjBxEU5EnsPfneLx84vMWAtTBQBeyooN3hYKTQ"
+        addresses:
+          type: array
+          items:
+            type: string
+          example: ["/ip4/10.0.1.5/tcp/4001"]
+        organization_id:
+          type: string
+        connected_at:
+          type: string
+          format: date-time
+        latency_ms:
+          type: integer
+        protocols:
+          type: array
+          items:
+            type: string
+    
+    PeerDetail:
+      allOf:
+        - $ref: '#/components/schemas/Peer'
+        - type: object
+          properties:
+            capabilities:
+              type: array
+              items:
+                type: string
+            reputation:
+              type: number
+              minimum: 0
+              maximum: 1
+            bandwidth:
+              type: object
+              properties:
+                upload_mbps:
+                  type: number
+                download_mbps:
+                  type: number
+            metadata:
+              type: object
+    
+    NodeInfo:
+      type: object
+      properties:
+        peer_id:
+          type: string
+        listen_addresses:
+          type: array
+          items:
+            type: string
+        announce_addresses:
+          type: array
+          items:
+            type: string
+        organization_id:
+          type: string
+        region:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        uptime_seconds:
+          type: integer
+    
+    BandwidthStats:
+      type: object
+      properties:
+        timeframe:
+          type: string
+        total_uploaded_bytes:
+          type: integer
+          format: int64
+        total_downloaded_bytes:
+          type: integer
+          format: int64
+        upload_mbps_avg:
+          type: number
+        download_mbps_avg:
+          type: number
+        by_peer:
+          type: array
+          items:
+            type: object
+            properties:
+              peer_id:
+                type: string
+              uploaded_bytes:
+                type: integer
+              downloaded_bytes:
+                type: integer
+    
+    BootstrapPeer:
+      type: object
+      properties:
+        peer_id:
+          type: string
+        addresses:
+          type: array
+          items:
+            type: string
+        region:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+    
+    NodeRegistration:
+      type: object
+      required: [peer_id, addresses, organization_id, public_key]
+      properties:
+        peer_id:
+          type: string
+        addresses:
+          type: array
+          items:
+            type: string
+        organization_id:
+          type: string
+        public_key:
+          type: string
+          description: ED25519 public key (base64)
+        capabilities:
+          type: array
+          items:
+            type: string
+        region:
+          type: string
+        metadata:
+          type: object
+    
+    FederatedQuery:
+      type: object
+      required: [query_id, query, user]
+      properties:
+        query_id:
+          type: string
+          format: uuid
+        query:
+          type: string
+        user:
+          type: object
+          required: [external_id, email]
+          properties:
+            external_id:
+              type: string
+            email:
+              type: string
+            groups:
+              type: array
+              items:
+                type: string
+        filters:
+          type: object
+          properties:
+            source_types:
+              type: array
+              items:
+                type: string
+            date_range:
+              type: object
+              properties:
+                start:
+                  type: string
+                  format: date
+                end:
+                  type: string
+                  format: date
+        max_results:
+          type: integer
+          default: 20
+        timeout_seconds:
+          type: integer
+          default: 10
+    
+    FederatedResults:
+      type: object
+      properties:
+        query_id:
+          type: string
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              snippet:
+                type: string
+              score:
+                type: number
+              source:
+                type: string
+              acl:
+                type: object
+        metadata:
+          type: object
+          properties:
+            total_searched:
+              type: integer
+            total_matched:
+              type: integer
+            acl_filtered:
+              type: integer
+            returned:
+              type: integer
+            search_time_ms:
+              type: integer
+    
+    TrustRequest:
+      type: object
+      required: [remote_url, capabilities]
+      properties:
+        remote_url:
+          type: string
+          format: uri
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum: [query, replicate, share_users]
+        notes:
+          type: string
+    
+    TrustRelationship:
+      type: object
+      properties:
+        trust_id:
+          type: string
+          format: uuid
+        local_org_id:
+          type: string
+        remote_org_id:
+          type: string
+        remote_url:
+          type: string
+        certificate_fingerprint:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, active, suspended, revoked]
+        trusted_since:
+          type: string
+          format: date-time
+        trusted_by:
+          type: string
+        last_verified_at:
+          type: string
+          format: date-time
+        last_connected_at:
+          type: string
+          format: date-time
+    
+    SyncStatus:
+      type: object
+      properties:
+        last_sync_at:
+          type: string
+          format: date-time
+        next_sync_at:
+          type: string
+          format: date-time
+        sync_interval_seconds:
+          type: integer
+        peers:
+          type: array
+          items:
+            type: object
+            properties:
+              peer_id:
+                type: string
+              last_sync_at:
+                type: string
+                format: date-time
+              lag_seconds:
+                type: integer
+              chunks_pending:
+                type: integer
+    
+    ReplicationStatus:
+      type: object
+      properties:
+        total_chunks:
+          type: integer
+        replicated_chunks:
+          type: integer
+        under_replicated:
+          type: integer
+        over_replicated:
+          type: integer
+        chunks:
+          type: array
+          items:
+            type: object
+            properties:
+              chunk_id:
+                type: string
+              replication_factor:
+                type: integer
+              target_factor:
+                type: integer
+              locations:
+                type: array
+                items:
+                  type: string
+    
+    ReplicationPolicy:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        factor:
+          type: integer
+          minimum: 1
+          maximum: 10
+        selector:
+          type: object
+          description: Rules for selecting which chunks this policy applies to
+          properties:
+            tags:
+              type: array
+              items:
+                type: string
+            source_types:
+              type: array
+              items:
+                type: string
+            size_range:
+              type: object
+              properties:
+                min_bytes:
+                  type: integer
+                max_bytes:
+                  type: integer
+        placement:
+          type: object
+          properties:
+            strategy:
+              type: string
+              enum: [random, geographic_diversity, latency_optimized]
+            prefer_regions:
+              type: array
+              items:
+                type: string
+    
+    WebSocketMessage:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [sync_request, sync_response, chunk_update, acl_update, heartbeat]
+        payload:
+          type: object
+    
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object

@@ -1,0 +1,510 @@
+openapi: 3.0.3
+info:
+  title: RAGE ACL Service API
+  version: 1.0.0
+  description: |
+    **ACL Service** handles fine-grained access control across the RAGE platform.
+    
+    **Features:**
+    - Permission validation with caching (5min TTL)
+    - Identity mapping (external → internal IDs)
+    - Group membership resolution
+    - Role-based access control (RBAC)
+    - Immutable audit trails with hash chains
+    - ACL inheritance and rule composition
+    
+    **Performance:**
+    - p95 latency: <100ms (with cache)
+    - Cache hit rate: >90%
+    - Batch validation supported (100 checks/request)
+
+servers:
+  - url: http://localhost:8001
+    description: Local development
+  - url: http://acl-service:8001
+    description: Docker/Podman internal network
+
+tags:
+  - name: Permissions
+    description: Permission validation and checking
+  - name: Roles
+    description: Role management
+  - name: Audit
+    description: Audit log queries
+  - name: ACL Registration
+    description: Register and manage ACL rules
+  - name: Federation
+    description: Federated ACL validation and user mapping (Layer 10)
+
+paths:
+  /api/v1/permissions/check:
+    post:
+      summary: Check permissions
+      description: Validate if user has permission to access resource
+      operationId: checkPermissions
+      tags:
+        - Permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - resource_type
+                - resource_id
+                - action
+              properties:
+                user_id:
+                  type: string
+                  example: "usr_abc123"
+                resource_type:
+                  type: string
+                  enum: [document, query, model, dataset]
+                resource_id:
+                  type: string
+                  example: "doc_xyz789"
+                action:
+                  type: string
+                  enum: [read, write, delete, admin]
+                context:
+                  type: object
+                  description: Additional context for permission decision
+      responses:
+        '200':
+          description: Permission check result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - allowed
+                  - reason
+                properties:
+                  allowed:
+                    type: boolean
+                  reason:
+                    type: string
+                    example: "User has 'reader' role via 'engineering' group"
+                  cached:
+                    type: boolean
+                  audit_id:
+                    type: string
+
+  /api/v1/permissions/batch:
+    post:
+      summary: Batch permission check
+      description: Check multiple permissions in single request
+      operationId: batchCheckPermissions
+      tags:
+        - Permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - checks
+              properties:
+                checks:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required:
+                      - user_id
+                      - resource_type
+                      - resource_id
+                      - action
+                    properties:
+                      user_id:
+                        type: string
+                      resource_type:
+                        type: string
+                      resource_id:
+                        type: string
+                      action:
+                        type: string
+      responses:
+        '200':
+          description: Batch permission results
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - results
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - index
+                        - allowed
+                      properties:
+                        index:
+                          type: integer
+                        allowed:
+                          type: boolean
+                        reason:
+                          type: string
+
+  /api/acl/register:
+    post:
+      summary: Register ACL rules
+      description: Register or update ACL rules for a resource
+      operationId: registerACL
+      tags:
+        - ACL Registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - resource_type
+                - resource_id
+                - acl
+              properties:
+                resource_type:
+                  type: string
+                resource_id:
+                  type: string
+                acl:
+                  type: object
+                  required:
+                    - visibility
+                  properties:
+                    visibility:
+                      type: string
+                      enum: [public, org, private]
+                    owner:
+                      type: string
+                    users:
+                      type: array
+                      items:
+                        type: string
+                    groups:
+                      type: array
+                      items:
+                        type: string
+                    roles:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        '201':
+          description: ACL registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  acl_id:
+                    type: string
+                  acl_hash:
+                    type: string
+
+  /api/v1/audit:
+    get:
+      summary: Query audit logs
+      description: Retrieve audit trail for security investigations
+      operationId: queryAuditLogs
+      tags:
+        - Audit
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: resource_id
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                  - pagination
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        audit_id:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        user_id:
+                          type: string
+                        resource_type:
+                          type: string
+                        resource_id:
+                          type: string
+                        action:
+                          type: string
+                        allowed:
+                          type: boolean
+                        reason:
+                          type: string
+                        request_id:
+                          type: string
+                        hash_chain:
+                          type: string
+                          description: Hash linking to previous audit entry
+                  pagination:
+                    type: object
+
+  /api/v1/federation/acl/check:
+    post:
+      summary: Validate federated ACL
+      description: |
+        Check if federated user from remote org can access resource.
+        Verifies trust relationship + ACL rules + sharing policy.
+      operationId: checkFederatedACL
+      tags:
+        - Federation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - remote_org_id
+                - external_user_id
+                - resource_id
+                - action
+              properties:
+                remote_org_id:
+                  type: string
+                  description: Remote organization identifier
+                  example: "partner-corp"
+                external_user_id:
+                  type: string
+                  description: User ID from remote organization
+                  example: "alice@partner.com"
+                resource_type:
+                  type: string
+                  enum: [document, query, model]
+                resource_id:
+                  type: string
+                  example: "doc_abc123"
+                action:
+                  type: string
+                  enum: [read, write, delete]
+      responses:
+        '200':
+          description: Federated ACL check result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - allowed
+                  - trust_valid
+                  - acl_matched
+                properties:
+                  allowed:
+                    type: boolean
+                  trust_valid:
+                    type: boolean
+                  acl_matched:
+                    type: boolean
+                  sharing_policy_matched:
+                    type: boolean
+                  shadow_user_id:
+                    type: string
+                    description: Mapped local user ID
+                  denial_reason:
+                    type: string
+                    example: "Trust relationship suspended"
+                  redactions_applied:
+                    type: integer
+                  audit_id:
+                    type: string
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  denial_reason:
+                    type: string
+
+  /api/v1/federation/users/map:
+    post:
+      summary: Map external user to local identity
+      description: Create or update federated user mapping
+      operationId: mapFederatedUser
+      tags:
+        - Federation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - external_org_id
+                - external_user_id
+                - external_email
+              properties:
+                external_org_id:
+                  type: string
+                external_user_id:
+                  type: string
+                external_email:
+                  type: string
+                external_username:
+                  type: string
+                mapping_type:
+                  type: string
+                  enum: [automatic, manual, saml, oauth, certificate]
+                  default: automatic
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+                  example: ["federated_query", "read_public"]
+                expires_at:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: User mapping created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  shadow_user_id:
+                    type: string
+                  verified:
+                    type: boolean
+                  created_at:
+                    type: string
+                    format: date-time
+        '200':
+          description: User mapping updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  shadow_user_id:
+                    type: string
+                  updated_at:
+                    type: string
+                    format: date-time
+
+  /api/v1/federation/policies/evaluate:
+    post:
+      summary: Evaluate data sharing policy
+      description: Check if document matches sharing policy rules
+      operationId: evaluateSharingPolicy
+      tags:
+        - Federation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sharing_policy_id
+                - document_id
+              properties:
+                sharing_policy_id:
+                  type: string
+                document_id:
+                  type: string
+                document_metadata:
+                  type: object
+                  description: Document metadata for rule evaluation
+      responses:
+        '200':
+          description: Policy evaluation result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - allowed
+                  - matched_rules
+                properties:
+                  allowed:
+                    type: boolean
+                  matched_rules:
+                    type: array
+                    items:
+                      type: string
+                  exclusion_reasons:
+                    type: array
+                    items:
+                      type: string
+                  redactions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        action:
+                          type: string
+                          enum: [remove, anonymize, redact]
+                        replacement:
+                          type: string
+
+components:
+  securitySchemes:
+    ServiceAuth:
+      type: http
+      scheme: bearer
+      description: Service-to-service authentication token
+
+security:
+  - ServiceAuth: []

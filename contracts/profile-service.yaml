@@ -1,0 +1,855 @@
+openapi: 3.1.0
+info:
+  title: RAGE User Profile Service API
+  description: |
+    User profile management and personalization service for RAGE.
+    
+    Enables automatic learning from user interactions, profile-based context
+    injection, and personalized search/agent routing.
+    
+    **Key Features:**
+    - Automatic profile learning from query patterns
+    - Behavioral tracking (sources clicked, topics of interest)
+    - Preference management (UI, agents, communication style)
+    - Context injection for every query
+    - Profile evolution timeline
+    - Privacy controls (opt-out of tracking)
+    
+  version: 1.0.0
+  contact:
+    name: RAGE Team
+    url: https://github.com/veics/rage
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:8007
+    description: Local development
+  - url: http://profile-service:8007
+    description: Docker/Podman internal
+  - url: https://api.rage.example.com/profile
+    description: Production
+
+tags:
+  - name: profiles
+    description: User profile management
+  - name: preferences
+    description: User preferences
+  - name: learning
+    description: Behavioral learning
+  - name: insights
+    description: Profile insights and analytics
+
+paths:
+  /api/v1/profile/me:
+    get:
+      summary: Get my profile
+      description: Retrieve the authenticated user's profile
+      operationId: getMyProfile
+      tags: [profiles]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    put:
+      summary: Update my profile
+      description: Update user profile preferences
+      operationId: updateMyProfile
+      tags: [profiles]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/profile/me/preferences:
+    get:
+      summary: Get my preferences
+      description: Retrieve user preferences only
+      operationId: getMyPreferences
+      tags: [preferences]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    patch:
+      summary: Update specific preferences
+      description: Partially update user preferences
+      operationId: updateMyPreferences
+      tags: [preferences]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Partial preference updates (deep merge)
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/profile/me/behavioral:
+    get:
+      summary: Get behavioral data
+      description: Retrieve learned behavioral patterns
+      operationId: getMyBehavioral
+      tags: [learning]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Behavioral data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BehavioralData'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/profile/me/context:
+    get:
+      summary: Get profile context for queries
+      description: Retrieve user context suitable for query injection
+      operationId: getMyContext
+      tags: [profiles]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: include_behavioral
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Include behavioral patterns in context
+      responses:
+        '200':
+          description: Context retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserContext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/profile/me/insights:
+    get:
+      summary: Get profile insights
+      description: Retrieve analytics and insights about user behavior
+      operationId: getMyInsights
+      tags: [insights]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: time_range
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y, all]
+            default: 30d
+      responses:
+        '200':
+          description: Insights retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileInsights'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/profile/me/timeline:
+    get:
+      summary: Get profile evolution timeline
+      description: Retrieve history of profile changes over time
+      operationId: getMyTimeline
+      tags: [insights]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: start_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Timeline retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileEvent'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/profile/me/reset-behavioral:
+    post:
+      summary: Reset behavioral data
+      description: Clear all learned behavioral patterns (keeps preferences)
+      operationId: resetMyBehavioral
+      tags: [learning]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Behavioral data reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Behavioral data reset successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/learning/interaction:
+    post:
+      summary: Record user interaction
+      description: Record interaction for profile learning (called by RAG Core after queries)
+      operationId: recordInteraction
+      tags: [learning]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InteractionRecord'
+      responses:
+        '202':
+          description: Interaction recorded (async processing)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Interaction recorded for learning
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/learning/feedback:
+    post:
+      summary: Record user feedback
+      description: Record explicit feedback (thumbs up/down, corrections)
+      operationId: recordFeedback
+      tags: [learning]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRecord'
+      responses:
+        '202':
+          description: Feedback recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Feedback recorded
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/admin/profiles/{user_id}:
+    get:
+      summary: Get user profile (admin)
+      description: Admin endpoint to view any user's profile
+      operationId: getUserProfile
+      tags: [profiles]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '403':
+          description: Insufficient permissions
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from ACL service
+
+  schemas:
+    UserProfile:
+      type: object
+      required:
+        - user_id
+        - preferences
+        - behavioral_data
+        - created_at
+        - updated_at
+      properties:
+        user_id:
+          type: string
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        behavioral_data:
+          $ref: '#/components/schemas/BehavioralData'
+        metadata:
+          type: object
+          additionalProperties: true
+        privacy_settings:
+          $ref: '#/components/schemas/PrivacySettings'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: string
+          format: date-time
+
+    UserPreferences:
+      type: object
+      properties:
+        preferred_sources:
+          type: array
+          items:
+            type: string
+          description: Preferred data sources (e.g., ["confluence", "jira"])
+          example: ["confluence", "github"]
+        preferred_agents:
+          type: array
+          items:
+            type: string
+          description: Preferred agent types
+          example: ["devops_agent", "code_search"]
+        communication_style:
+          type: string
+          enum: [concise, detailed, technical, simple]
+          default: detailed
+        expertise_level:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+          default: intermediate
+        timezone:
+          type: string
+          description: IANA timezone
+          default: UTC
+          example: America/New_York
+        language:
+          type: string
+          description: ISO 639-1 language code
+          default: en
+          example: en
+        theme:
+          type: string
+          enum: [light, dark, auto]
+          default: auto
+        notifications:
+          type: object
+          properties:
+            email:
+              type: boolean
+              default: true
+            slack:
+              type: boolean
+              default: false
+            workflow_completion:
+              type: boolean
+              default: true
+        dietary_goals:
+          type: object
+          description: Diet-related preferences (for nutrition workflows)
+          properties:
+            calories_target:
+              type: integer
+            protein_target:
+              type: integer
+            restrictions:
+              type: array
+              items:
+                type: string
+              example: ["dairy-free", "gluten-free"]
+            preferences:
+              type: array
+              items:
+                type: string
+              example: ["mediterranean", "high-protein"]
+        learning_goals:
+          type: object
+          description: Learning-related preferences
+          properties:
+            topics_learning:
+              type: array
+              items:
+                type: string
+              example: ["kubernetes", "terraform"]
+            topics_mastered:
+              type: array
+              items:
+                type: string
+              example: ["docker", "git"]
+        custom:
+          type: object
+          additionalProperties: true
+          description: Custom user-defined preferences
+
+    BehavioralData:
+      type: object
+      properties:
+        query_patterns:
+          type: object
+          properties:
+            total_queries:
+              type: integer
+            avg_queries_per_day:
+              type: number
+            peak_query_times:
+              type: array
+              items:
+                type: string
+              description: Hours when user queries most (e.g., ["10", "14", "16"])
+            weekday_pattern:
+              type: object
+              additionalProperties:
+                type: integer
+              description: Query count by day of week
+        common_topics:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Topic frequency map
+          example:
+            kubernetes: 45
+            python: 38
+            devops: 32
+        source_preferences:
+          type: object
+          properties:
+            click_rates:
+              type: object
+              additionalProperties:
+                type: number
+              description: Click-through rate by source (0.0-1.0)
+              example:
+                confluence: 0.75
+                jira: 0.45
+                github: 0.60
+            query_frequency:
+              type: object
+              additionalProperties:
+                type: integer
+              description: Query count by source
+        agent_usage:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Agent invocation counts
+          example:
+            devops_agent: 120
+            code_search: 85
+            hr_agent: 12
+        session_patterns:
+          type: object
+          properties:
+            avg_session_length_minutes:
+              type: number
+            avg_queries_per_session:
+              type: number
+            typical_session_times:
+              type: array
+              items:
+                type: string
+              description: Typical session start times
+        query_complexity:
+          type: string
+          enum: [simple, intermediate, advanced]
+          description: Inferred query complexity level
+        response_preferences:
+          type: object
+          properties:
+            avg_response_length_preferred:
+              type: string
+              enum: [short, medium, long]
+            code_snippet_usage:
+              type: number
+              description: Percentage of queries where code snippets were helpful
+        learning_velocity:
+          type: object
+          properties:
+            topics_mastered_last_30d:
+              type: integer
+            topics_started_last_30d:
+              type: integer
+            mastery_rate:
+              type: number
+              description: Topics mastered / topics started ratio
+
+    PrivacySettings:
+      type: object
+      properties:
+        track_behavioral:
+          type: boolean
+          default: true
+          description: Allow behavioral tracking
+        share_analytics:
+          type: boolean
+          default: false
+          description: Share anonymized analytics for product improvement
+        data_retention_days:
+          type: integer
+          default: 365
+          description: How long to retain behavioral data
+
+    UserContext:
+      type: object
+      description: User context for query injection
+      properties:
+        user_id:
+          type: string
+        preferred_sources:
+          type: array
+          items:
+            type: string
+        expertise_level:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+        common_topics:
+          type: array
+          items:
+            type: string
+          description: Top topics of interest
+        communication_style:
+          type: string
+          enum: [concise, detailed, technical, simple]
+        timezone:
+          type: string
+        language:
+          type: string
+        personalization_hints:
+          type: object
+          properties:
+            boost_sources:
+              type: object
+              additionalProperties:
+                type: number
+              description: Score multipliers for preferred sources
+            adjust_complexity:
+              type: string
+              enum: [simplify, maintain, increase]
+            preferred_format:
+              type: string
+              enum: [text, code, visual, mixed]
+
+    ProfileInsights:
+      type: object
+      properties:
+        time_range:
+          type: string
+        summary:
+          type: object
+          properties:
+            total_queries:
+              type: integer
+            most_active_day:
+              type: string
+            most_queried_topic:
+              type: string
+            favorite_source:
+              type: string
+            expertise_progression:
+              type: string
+              description: e.g., "intermediate → advanced"
+        trends:
+          type: object
+          properties:
+            query_frequency_trend:
+              type: string
+              enum: [increasing, stable, decreasing]
+            topic_diversity_trend:
+              type: string
+              enum: [expanding, stable, narrowing]
+            session_length_trend:
+              type: string
+              enum: [longer, stable, shorter]
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [source, agent, workflow, learning]
+              title:
+                type: string
+              description:
+                type: string
+              reason:
+                type: string
+          description: Personalized recommendations based on behavior
+        learning_progress:
+          type: object
+          properties:
+            topics_in_progress:
+              type: array
+              items:
+                type: object
+                properties:
+                  topic:
+                    type: string
+                  queries_count:
+                    type: integer
+                  first_query:
+                    type: string
+                    format: date-time
+                  proficiency:
+                    type: string
+                    enum: [exploring, learning, practicing, mastered]
+
+    ProfileEvent:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+          enum: [preference_changed, behavioral_learned, expertise_level_changed, topic_mastered, milestone_reached]
+        timestamp:
+          type: string
+          format: date-time
+        description:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    ProfileUpdate:
+      type: object
+      properties:
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        privacy_settings:
+          $ref: '#/components/schemas/PrivacySettings'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    InteractionRecord:
+      type: object
+      required:
+        - query
+        - results
+      properties:
+        query_id:
+          type: string
+          format: uuid
+        query:
+          type: string
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id:
+                type: string
+              source:
+                type: string
+              score:
+                type: number
+              clicked:
+                type: boolean
+              time_to_click_ms:
+                type: integer
+        agents_used:
+          type: array
+          items:
+            type: string
+        session_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    FeedbackRecord:
+      type: object
+      required:
+        - query_id
+        - feedback_type
+      properties:
+        query_id:
+          type: string
+          format: uuid
+        feedback_type:
+          type: string
+          enum: [thumbs_up, thumbs_down, correction, suggestion]
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Star rating (1-5)
+        comment:
+          type: string
+          maxLength: 1000
+        correction:
+          type: object
+          properties:
+            original:
+              type: string
+            corrected:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        request_id:
+          type: string
+          format: uuid
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

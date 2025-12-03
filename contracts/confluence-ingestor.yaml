@@ -1,0 +1,152 @@
+openapi: 3.0.3
+info:
+  title: RAGE Confluence Ingestor API
+  version: 1.0.0
+  description: |
+    **Confluence Ingestor** syncs Confluence workspaces into RAGE with:
+    - Multi-threaded space/page discovery
+    - ACL extraction from permissions
+    - Incremental sync with version tracking
+    - Circuit breaker for failing pages
+    - OAuth 2.0 and PAT authentication
+
+servers:
+  - url: http://localhost:8010
+    description: Local development
+
+paths:
+  /api/v1/sync/workspace:
+    post:
+      summary: Sync entire workspace
+      description: Full workspace sync with all accessible spaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - confluence_url
+                - auth
+              properties:
+                confluence_url:
+                  type: string
+                  example: "https://yourcompany.atlassian.net"
+                auth:
+                  type: object
+                  oneOf:
+                    - type: object
+                      required: [type, username, api_token]
+                      properties:
+                        type:
+                          type: string
+                          enum: [basic]
+                        username:
+                          type: string
+                        api_token:
+                          type: string
+                    - type: object
+                      required: [type, access_token]
+                      properties:
+                        type:
+                          type: string
+                          enum: [oauth2]
+                        access_token:
+                          type: string
+                incremental:
+                  type: boolean
+                  default: true
+                batch_size:
+                  type: integer
+                  default: 50
+      responses:
+        '202':
+          description: Sync job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [pending, running]
+
+  /api/v1/sync/space:
+    post:
+      summary: Sync specific space
+      description: Sync a single Confluence space
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - confluence_url
+                - space_key
+                - auth
+              properties:
+                confluence_url:
+                  type: string
+                space_key:
+                  type: string
+                  example: "ENG"
+                auth:
+                  type: object
+      responses:
+        '202':
+          description: Space sync started
+
+  /api/v1/sync/status/{job_id}:
+    get:
+      summary: Get sync job status
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [pending, running, completed, failed]
+                  progress:
+                    type: object
+                    properties:
+                      total_pages:
+                        type: integer
+                      pages_processed:
+                        type: integer
+                      pages_failed:
+                        type: integer
+                      current_space:
+                        type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        page_id:
+                          type: string
+                        error:
+                          type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - BearerAuth: []

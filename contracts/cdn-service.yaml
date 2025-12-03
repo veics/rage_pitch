@@ -1,0 +1,575 @@
+openapi: 3.1.0
+info:
+  title: RAGE CDN Service API
+  version: 0.2.0
+  description: |
+    Content Delivery Network management for RAGE.
+    
+    Supports multi-CDN deployment with:
+    - Commercial CDNs (Cloudflare, Fastly, AWS CloudFront, Azure CDN)
+    - Self-hosted edge nodes (Varnish, Nginx)
+    - Geographic routing
+    - Cache invalidation
+    - Analytics and monitoring
+  contact:
+    name: RAGE Team
+    url: https://github.com/rage/rage
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://rage.example.com/api/v1
+    description: Production
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+tags:
+  - name: CDN
+    description: CDN management
+  - name: Cache
+    description: Cache control
+  - name: Analytics
+    description: CDN analytics
+
+paths:
+  /cdn/providers:
+    get:
+      summary: List CDN providers
+      tags: [CDN]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: CDN providers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CDNProvider'
+    
+    post:
+      summary: Add CDN provider
+      tags: [CDN]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CDNProviderConfig'
+      responses:
+        '201':
+          description: Provider added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CDNProvider'
+  
+  /cdn/providers/{provider_id}:
+    get:
+      summary: Get CDN provider details
+      tags: [CDN]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Provider details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CDNProviderDetail'
+    
+    patch:
+      summary: Update CDN provider
+      tags: [CDN]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                priority:
+                  type: integer
+                routing:
+                  type: object
+      responses:
+        '200':
+          description: Provider updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CDNProvider'
+    
+    delete:
+      summary: Remove CDN provider
+      tags: [CDN]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Provider removed
+  
+  /cdn/cache/purge:
+    post:
+      summary: Purge cache
+      tags: [Cache]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keys:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific cache keys to purge
+                prefixes:
+                  type: array
+                  items:
+                    type: string
+                  description: Purge all keys with prefix
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Purge by cache tags
+                providers:
+                  type: array
+                  items:
+                    type: string
+                  description: Limit to specific providers (optional)
+              oneOf:
+                - required: [keys]
+                - required: [prefixes]
+                - required: [tags]
+      responses:
+        '202':
+          description: Purge request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  purge_id:
+                    type: string
+                  status:
+                    type: string
+                  providers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        provider_id:
+                          type: string
+                        status:
+                          type: string
+  
+  /cdn/cache/purge/{purge_id}:
+    get:
+      summary: Get purge status
+      tags: [Cache]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: purge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Purge status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  purge_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [pending, in_progress, completed, failed]
+                  providers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        provider_id:
+                          type: string
+                        status:
+                          type: string
+                        purged_at:
+                          type: string
+                          format: date-time
+  
+  /cdn/cache/stats:
+    get:
+      summary: Get cache statistics
+      tags: [Cache, Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: provider_id
+          in: query
+          schema:
+            type: string
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [1h, 6h, 24h, 7d, 30d]
+            default: 24h
+      responses:
+        '200':
+          description: Cache statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheStats'
+  
+  /cdn/routing:
+    get:
+      summary: Get CDN routing configuration
+      tags: [CDN]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Routing configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingConfig'
+    
+    put:
+      summary: Update CDN routing
+      tags: [CDN]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutingConfig'
+      responses:
+        '200':
+          description: Routing updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingConfig'
+  
+  /cdn/analytics:
+    get:
+      summary: Get CDN analytics
+      tags: [Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: provider_id
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: metrics
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [requests, bandwidth, cache_hit_rate, latency, errors]
+      responses:
+        '200':
+          description: CDN analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CDNAnalytics'
+  
+  /cdn/health:
+    get:
+      summary: CDN health check
+      tags: [CDN]
+      responses:
+        '200':
+          description: CDN health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  healthy:
+                    type: boolean
+                  providers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        provider_id:
+                          type: string
+                        status:
+                          type: string
+                          enum: [healthy, degraded, down]
+                        latency_ms:
+                          type: integer
+                        last_check:
+                          type: string
+                          format: date-time
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  schemas:
+    CDNProvider:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [commercial, self-hosted]
+        provider:
+          type: string
+          enum: [cloudflare, fastly, cloudfront, azure_cdn, varnish, nginx]
+        enabled:
+          type: boolean
+        priority:
+          type: integer
+        routing:
+          type: object
+          properties:
+            regions:
+              type: array
+              items:
+                type: string
+            countries:
+              type: array
+              items:
+                type: string
+        created_at:
+          type: string
+          format: date-time
+    
+    CDNProviderConfig:
+      type: object
+      required: [name, type, provider, config]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [commercial, self-hosted]
+        provider:
+          type: string
+          enum: [cloudflare, fastly, cloudfront, azure_cdn, varnish, nginx]
+        config:
+          type: object
+          description: Provider-specific configuration
+        routing:
+          type: object
+          properties:
+            regions:
+              type: array
+              items:
+                type: string
+            priority:
+              type: integer
+    
+    CDNProviderDetail:
+      allOf:
+        - $ref: '#/components/schemas/CDNProvider'
+        - type: object
+          properties:
+            config:
+              type: object
+            metrics:
+              type: object
+              properties:
+                requests_24h:
+                  type: integer
+                bandwidth_gb_24h:
+                  type: number
+                cache_hit_rate:
+                  type: number
+                avg_latency_ms:
+                  type: number
+    
+    CacheStats:
+      type: object
+      properties:
+        timeframe:
+          type: string
+        total_requests:
+          type: integer
+        cache_hits:
+          type: integer
+        cache_misses:
+          type: integer
+        cache_hit_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+        total_bandwidth_bytes:
+          type: integer
+          format: int64
+        bandwidth_saved_bytes:
+          type: integer
+          format: int64
+        by_content_type:
+          type: array
+          items:
+            type: object
+            properties:
+              content_type:
+                type: string
+              requests:
+                type: integer
+              hit_rate:
+                type: number
+        by_status_code:
+          type: array
+          items:
+            type: object
+            properties:
+              status_code:
+                type: integer
+              count:
+                type: integer
+    
+    RoutingConfig:
+      type: object
+      properties:
+        strategy:
+          type: string
+          enum: [geographic, latency, cost_optimized, round_robin]
+        rules:
+          type: array
+          items:
+            type: object
+            properties:
+              priority:
+                type: integer
+              conditions:
+                type: object
+                properties:
+                  countries:
+                    type: array
+                    items:
+                      type: string
+                  regions:
+                    type: array
+                    items:
+                      type: string
+                  ip_ranges:
+                    type: array
+                    items:
+                      type: string
+              target_provider:
+                type: string
+    
+    CDNAnalytics:
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        metrics:
+          type: object
+          properties:
+            total_requests:
+              type: integer
+            total_bandwidth_bytes:
+              type: integer
+              format: int64
+            cache_hit_rate:
+              type: number
+            avg_latency_ms:
+              type: number
+            error_rate:
+              type: number
+        timeseries:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              requests:
+                type: integer
+              bandwidth_bytes:
+                type: integer
+              latency_ms:
+                type: number
+        by_provider:
+          type: array
+          items:
+            type: object
+            properties:
+              provider_id:
+                type: string
+              metrics:
+                type: object
+        by_region:
+          type: array
+          items:
+            type: object
+            properties:
+              region:
+                type: string
+              requests:
+                type: integer
+              latency_ms:
+                type: number

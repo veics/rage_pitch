@@ -1,0 +1,941 @@
+openapi: 3.1.0
+info:
+  title: RAGE Temporal Service API
+  description: |
+    Document versioning and time-travel query service for RAGE.
+    
+    Enables temporal queries, document version history, change tracking, and
+    "time travel" capabilities to view knowledge as it existed at any point in time.
+    
+    **Key Features:**
+    - Automatic version creation on document updates
+    - Complete version history with diffs
+    - Time-based queries ("show me this doc from last month")
+    - Timeline visualization of document evolution
+    - Change attribution and audit trails
+    - Rollback to previous versions
+    
+  version: 1.0.0
+  contact:
+    name: RAGE Team
+    url: https://github.com/veics/rage
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:8008
+    description: Local development
+  - url: http://temporal-service:8008
+    description: Docker/Podman internal
+  - url: https://api.rage.example.com/temporal
+    description: Production
+
+tags:
+  - name: versions
+    description: Document version management
+  - name: timeline
+    description: Document timeline and history
+  - name: search
+    description: Temporal search capabilities
+  - name: diff
+    description: Version comparison and diffs
+
+paths:
+  /api/v1/documents/{document_id}/versions:
+    get:
+      summary: List document versions
+      description: Retrieve version history for a document
+      operationId: listVersions
+      tags: [versions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: start_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter versions after this time
+        - name: end_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter versions before this time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Versions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document_id:
+                    type: string
+                  versions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DocumentVersionSummary'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/documents/{document_id}/versions/{version_number}:
+    get:
+      summary: Get specific version
+      description: Retrieve a specific version of a document
+      operationId: getVersion
+      tags: [versions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version_number
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Version retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/documents/{document_id}/versions/latest:
+    get:
+      summary: Get latest version
+      description: Retrieve the most recent version of a document
+      operationId: getLatestVersion
+      tags: [versions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Latest version retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/documents/{document_id}/at-time:
+    get:
+      summary: Get document at specific time
+      description: Retrieve document as it existed at a specific point in time
+      operationId: getDocumentAtTime
+      tags: [versions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: timestamp
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Timestamp to query
+      responses:
+        '200':
+          description: Document version retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentVersion'
+        '404':
+          description: Document did not exist at specified time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/documents/{document_id}/timeline:
+    get:
+      summary: Get document timeline
+      description: Retrieve visual timeline of document changes
+      operationId: getDocumentTimeline
+      tags: [timeline]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: start_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: include_content
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include full content in timeline events
+      responses:
+        '200':
+          description: Timeline retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTimeline'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/documents/{document_id}/diff:
+    get:
+      summary: Compare versions
+      description: Get diff between two versions of a document
+      operationId: compareVersions
+      tags: [diff]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: from_version
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: to_version
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [unified, side-by-side, structured]
+            default: structured
+      responses:
+        '200':
+          description: Diff retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDiff'
+        '400':
+          description: Invalid version numbers
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/documents/{document_id}/rollback:
+    post:
+      summary: Rollback to version
+      description: Create new version with content from a previous version (rollback)
+      operationId: rollbackVersion
+      tags: [versions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_version
+              properties:
+                target_version:
+                  type: integer
+                  minimum: 1
+                  description: Version number to rollback to
+                reason:
+                  type: string
+                  description: Reason for rollback
+      responses:
+        '201':
+          description: Rollback successful, new version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentVersion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/search/temporal:
+    post:
+      summary: Temporal search
+      description: Search documents as they existed at a specific point in time
+      operationId: temporalSearch
+      tags: [search]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemporalSearchRequest'
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/search/time-range:
+    post:
+      summary: Time range search
+      description: Search documents modified within a specific time range
+      operationId: timeRangeSearch
+      tags: [search]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeRangeSearchRequest'
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/timeline/global:
+    get:
+      summary: Get global timeline
+      description: Retrieve timeline of all document changes (admin view)
+      operationId: getGlobalTimeline
+      tags: [timeline]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: start_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: source
+          in: query
+          schema:
+            type: string
+          description: Filter by source (e.g., "confluence", "jira")
+        - name: change_type
+          in: query
+          schema:
+            type: string
+            enum: [created, updated, deleted]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Global timeline retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TimelineEvent'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '403':
+          description: Insufficient permissions
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/stats/versioning:
+    get:
+      summary: Get versioning statistics
+      description: Retrieve statistics about document versioning
+      operationId: getVersioningStats
+      tags: [timeline]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: time_range
+          in: query
+          schema:
+            type: string
+            enum: [24h, 7d, 30d, 90d, 1y]
+            default: 30d
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersioningStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from ACL service
+
+  schemas:
+    DocumentVersion:
+      type: object
+      required:
+        - id
+        - document_id
+        - version_number
+        - content
+        - metadata
+        - created_at
+        - change_type
+      properties:
+        id:
+          type: string
+          format: uuid
+        document_id:
+          type: string
+        version_number:
+          type: integer
+          minimum: 1
+        content:
+          type: string
+          description: Full document content at this version
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Document metadata at this version
+        embeddings:
+          type: array
+          items:
+            type: number
+          description: Vector embeddings (if available)
+        created_at:
+          type: string
+          format: date-time
+          description: When this version was created in RAGE
+        ingested_at:
+          type: string
+          format: date-time
+          description: When document was ingested
+        modified_at:
+          type: string
+          format: date-time
+          description: When document was modified in source system
+        change_type:
+          type: string
+          enum: [created, updated, deleted, rollback]
+        change_author:
+          type: string
+          description: Author of this change (from source system)
+        change_summary:
+          type: string
+          description: Summary of changes
+        diff_from_previous:
+          $ref: '#/components/schemas/VersionDiff'
+        previous_version_id:
+          type: string
+          format: uuid
+          nullable: true
+        size_bytes:
+          type: integer
+          description: Content size in bytes
+
+    DocumentVersionSummary:
+      type: object
+      required:
+        - id
+        - version_number
+        - created_at
+        - change_type
+      properties:
+        id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        modified_at:
+          type: string
+          format: date-time
+        change_type:
+          type: string
+          enum: [created, updated, deleted, rollback]
+        change_author:
+          type: string
+        change_summary:
+          type: string
+        size_bytes:
+          type: integer
+        has_diff:
+          type: boolean
+
+    DocumentTimeline:
+      type: object
+      required:
+        - document_id
+        - total_versions
+        - first_created
+        - events
+      properties:
+        document_id:
+          type: string
+        total_versions:
+          type: integer
+        first_created:
+          type: string
+          format: date-time
+        last_modified:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEvent'
+        statistics:
+          type: object
+          properties:
+            avg_time_between_updates:
+              type: string
+              description: Average duration between updates (e.g., "2 days")
+            total_authors:
+              type: integer
+            most_active_author:
+              type: string
+            change_frequency:
+              type: string
+              enum: [very_active, active, moderate, infrequent]
+
+    TimelineEvent:
+      type: object
+      required:
+        - version_number
+        - timestamp
+        - change_type
+      properties:
+        version_number:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        change_type:
+          type: string
+          enum: [created, updated, deleted, rollback]
+        change_author:
+          type: string
+        change_summary:
+          type: string
+        size_bytes:
+          type: integer
+        has_diff:
+          type: boolean
+        content:
+          type: string
+          description: Full content (if include_content=true)
+        metadata:
+          type: object
+          additionalProperties: true
+
+    VersionDiff:
+      type: object
+      properties:
+        format:
+          type: string
+          enum: [unified, side-by-side, structured]
+        added_lines:
+          type: array
+          items:
+            type: string
+          description: Lines added in this version
+        removed_lines:
+          type: array
+          items:
+            type: string
+          description: Lines removed in this version
+        changed_sections:
+          type: array
+          items:
+            type: object
+            properties:
+              section:
+                type: string
+              old_content:
+                type: string
+              new_content:
+                type: string
+        unified_diff:
+          type: string
+          description: Unified diff format (if format=unified)
+        side_by_side:
+          type: object
+          properties:
+            left:
+              type: string
+            right:
+              type: string
+          description: Side-by-side diff (if format=side-by-side)
+        statistics:
+          type: object
+          properties:
+            lines_added:
+              type: integer
+            lines_removed:
+              type: integer
+            lines_changed:
+              type: integer
+            similarity_score:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Similarity between versions (0.0-1.0)
+
+    TemporalSearchRequest:
+      type: object
+      required:
+        - query
+        - timestamp
+      properties:
+        query:
+          type: string
+          description: Search query
+        timestamp:
+          type: string
+          format: date-time
+          description: Point in time to search
+        filters:
+          type: object
+          properties:
+            source:
+              type: array
+              items:
+                type: string
+            document_ids:
+              type: array
+              items:
+                type: string
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        user_context:
+          type: object
+          additionalProperties: true
+          description: User context for ACL filtering
+
+    TimeRangeSearchRequest:
+      type: object
+      required:
+        - query
+        - start_time
+        - end_time
+      properties:
+        query:
+          type: string
+          description: Search query
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        filters:
+          type: object
+          properties:
+            source:
+              type: array
+              items:
+                type: string
+            change_type:
+              type: array
+              items:
+                type: string
+                enum: [created, updated, deleted]
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        user_context:
+          type: object
+          additionalProperties: true
+
+    TemporalSearchResponse:
+      type: object
+      required:
+        - results
+        - total
+        - query_info
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id:
+                type: string
+              version_number:
+                type: integer
+              score:
+                type: number
+              content:
+                type: string
+              metadata:
+                type: object
+                additionalProperties: true
+              timestamp:
+                type: string
+                format: date-time
+                description: Timestamp of this version
+              is_current:
+                type: boolean
+                description: Whether this is the current version
+        total:
+          type: integer
+        query_info:
+          type: object
+          properties:
+            query:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            time_range:
+              type: object
+              properties:
+                start:
+                  type: string
+                  format: date-time
+                end:
+                  type: string
+                  format: date-time
+            execution_time_ms:
+              type: integer
+
+    VersioningStats:
+      type: object
+      properties:
+        time_range:
+          type: string
+        total_documents:
+          type: integer
+        total_versions:
+          type: integer
+        avg_versions_per_document:
+          type: number
+        most_versioned_documents:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id:
+                type: string
+              title:
+                type: string
+              version_count:
+                type: integer
+        change_frequency:
+          type: object
+          properties:
+            created:
+              type: integer
+            updated:
+              type: integer
+            deleted:
+              type: integer
+            rollback:
+              type: integer
+        storage_usage:
+          type: object
+          properties:
+            total_bytes:
+              type: integer
+            avg_version_size:
+              type: integer
+            deduplication_savings:
+              type: number
+              description: Percentage saved via deduplication
+        top_authors:
+          type: array
+          items:
+            type: object
+            properties:
+              author:
+                type: string
+              change_count:
+                type: integer
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        request_id:
+          type: string
+          format: uuid
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

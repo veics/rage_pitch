@@ -1,0 +1,1367 @@
+openapi: 3.0.3
+info:
+  title: RAGE Core API
+  version: 1.0.0
+  description: |
+    **RAGE Core** is the central RAG (Retrieval-Augmented Generation) engine that handles:
+    - Document ingestion with ACL preservation
+    - Hybrid search queries (vector + semantic + keyword)
+    - LLM-powered answer generation with citations
+    - User authentication and session management
+    - Query caching (exact + semantic) with ACL awareness
+    
+    ## Authentication
+    All endpoints (except `/health`, `/api/v1/auth/login`, `/api/v1/auth/register`) require JWT Bearer token.
+    
+    ## Rate Limiting
+    - Anonymous: 10 requests/minute
+    - Authenticated: 100 requests/minute
+    - Enterprise: 1000 requests/minute
+    
+    ## Caching Strategy
+    - Exact cache: MD5 hash of query + user context
+    - Semantic cache: Vector similarity threshold 0.95
+    - TTL: 1 hour (configurable)
+    - Invalidation: ACL changes, document updates
+  contact:
+    name: RAGE Team
+    url: https://github.com/veics/rage
+  license:
+    name: TBD (Open Source / Commercial Hybrid)
+
+servers:
+  - url: http://localhost:8003
+    description: Local development
+  - url: http://rag-core:8003
+    description: Docker/Podman internal network
+  - url: https://api.rage.example.com
+    description: Production
+
+tags:
+  - name: Health
+    description: Service health and readiness checks
+  - name: Authentication
+    description: User authentication and token management
+  - name: Query
+    description: RAG query and answer generation
+  - name: Ingestion
+    description: Document ingestion and processing
+  - name: Documents
+    description: Document management and metadata
+  - name: Replication
+    description: Content replication across P2P network (Layer 10)
+  - name: Cache
+    description: Cache management and statistics
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns service health status and dependency checks
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  value:
+                    status: "healthy"
+                    version: "1.0.0"
+                    timestamp: "2025-11-25T10:30:00Z"
+                    dependencies:
+                      postgres: "healthy"
+                      redis: "healthy"
+                      qdrant: "healthy"
+                      acl_service: "healthy"
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                unhealthy:
+                  value:
+                    status: "unhealthy"
+                    version: "1.0.0"
+                    timestamp: "2025-11-25T10:30:00Z"
+                    dependencies:
+                      postgres: "healthy"
+                      redis: "unhealthy"
+                      qdrant: "healthy"
+                      acl_service: "degraded"
+
+  /ready:
+    get:
+      summary: Readiness check
+      description: Kubernetes-compatible readiness probe
+      operationId: getReadiness
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is ready to handle requests
+        '503':
+          description: Service is not ready
+
+  /api/v1/auth/register:
+    post:
+      summary: Register new user
+      description: Create a new user account
+      operationId: registerUser
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/auth/login:
+    post:
+      summary: User login
+      description: Authenticate user and return JWT tokens
+      operationId: loginUser
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      operationId: refreshToken
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/me:
+    get:
+      summary: Get current user
+      description: Returns authenticated user information
+      operationId: getCurrentUser
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/query:
+    post:
+      summary: RAG query
+      description: |
+        Execute a RAG query with hybrid search and LLM answer generation.
+        
+        **Process:**
+        1. Check exact cache (MD5 hash)
+        2. Check semantic cache (vector similarity > 0.95)
+        3. Search documents (hybrid: vector + semantic + BM25)
+        4. Filter results by ACL permissions
+        5. Generate answer with LLM
+        6. Return answer + citations
+        7. Cache result
+        
+        **ACL Enforcement:**
+        - Documents filtered by user's permissions
+        - Identity mapping: Slack user → Confluence/Jira identity
+        - Group membership resolved from ACL service
+      operationId: executeQuery
+      tags:
+        - Query
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+              examples:
+                cache_hit:
+                  summary: Answer from cache
+                  value:
+                    query_id: "qry_2j3k4l5m6n7o8p9q"
+                    query: "What is RAGE?"
+                    answer: "RAGE (RAG Anywhere & Everywhere) is an enterprise-grade modular RAG platform..."
+                    citations:
+                      - document_id: "doc_abc123"
+                        title: "RAGE Architecture Overview"
+                        url: "https://confluence.example.com/display/RAGE/Architecture"
+                        score: 0.92
+                        chunk_text: "RAGE is designed as a microservices platform..."
+                    cached: true
+                    cache_type: "exact"
+                    latency_ms: 45
+                    model_used: null
+                    tokens_used: 0
+                full_rag:
+                  summary: Full RAG execution
+                  value:
+                    query_id: "qry_9z8y7x6w5v4u3t2s"
+                    query: "How do I deploy RAGE?"
+                    answer: "To deploy RAGE, you have multiple options:\n\n1. **Podman** (recommended)..."
+                    citations:
+                      - document_id: "doc_deploy_123"
+                        title: "Deployment Guide"
+                        url: "https://confluence.example.com/display/RAGE/Deployment"
+                        score: 0.95
+                        chunk_text: "RAGE supports Podman, Docker, and Kubernetes..."
+                      - document_id: "doc_quickstart_456"
+                        title: "Quick Start"
+                        url: "https://confluence.example.com/display/RAGE/QuickStart"
+                        score: 0.87
+                        chunk_text: "Run ./scripts/deploy-rage.sh for automated setup..."
+                    cached: false
+                    cache_type: null
+                    latency_ms: 1850
+                    model_used: "gpt-4-turbo"
+                    tokens_used: 2456
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/ingest:
+    post:
+      summary: Ingest document
+      description: |
+        Ingest a document into the RAG system.
+        
+        **Process:**
+        1. Validate document format
+        2. Extract text content
+        3. Detect and scrub PII (if enabled)
+        4. Extract ACL metadata
+        5. Chunk document (by headings or tokens)
+        6. Generate embeddings
+        7. Store in vector database
+        8. Register ACLs with ACL service
+        
+        **Supported Formats:**
+        - Plain text (.txt)
+        - Markdown (.md)
+        - PDF (.pdf)
+        - Word documents (.docx)
+        - HTML (.html)
+      operationId: ingestDocument
+      tags:
+        - Ingestion
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+      responses:
+        '202':
+          description: Document accepted for ingestion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/ingest/{job_id}:
+    get:
+      summary: Get ingestion job status
+      description: Check the status of a document ingestion job
+      operationId: getIngestionJobStatus
+      tags:
+        - Ingestion
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ingest_job_abc123"
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionJobStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/documents:
+    get:
+      summary: List documents
+      description: Get paginated list of documents (filtered by ACL)
+      operationId: listDocuments
+      tags:
+        - Documents
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: source_type
+          in: query
+          schema:
+            type: string
+            enum: [confluence, jira, file, slack]
+          description: Filter by source type
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in title/content
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+
+  /api/v1/documents/{document_id}:
+    get:
+      summary: Get document
+      description: Retrieve document metadata and content (ACL enforced)
+      operationId: getDocument
+      tags:
+        - Documents
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "doc_2j3k4l5m6n7o8p9q"
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete document
+      description: Soft-delete a document (requires owner or admin role)
+      operationId: deleteDocument
+      tags:
+        - Documents
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Document deleted successfully
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/cache/stats:
+    get:
+      summary: Get cache statistics
+      description: Returns cache hit rates, size, and performance metrics
+      operationId: getCacheStats
+      tags:
+        - Cache
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Cache statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheStats'
+
+  /api/v1/cache/invalidate:
+    post:
+      summary: Invalidate cache
+      description: Manually invalidate cache entries (admin only)
+      operationId: invalidateCache
+      tags:
+        - Cache
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pattern:
+                  type: string
+                  description: Cache key pattern (supports wildcards)
+                  example: "user:john_doe:*"
+                scope:
+                  type: string
+                  enum: [all, exact, semantic]
+                  default: all
+      responses:
+        '200':
+          description: Cache invalidated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invalidated_count:
+                    type: integer
+                    example: 42
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/replication/status:
+    get:
+      summary: Get replication status
+      description: Get content replication status for documents or chunks
+      operationId: getReplicationStatus
+      tags:
+        - Replication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: query
+          schema:
+            type: string
+          description: Filter by document ID
+        - name: chunk_id
+          in: query
+          schema:
+            type: string
+          description: Filter by chunk ID (IPFS CID)
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in_progress, complete, under_replicated, over_replicated]
+      responses:
+        '200':
+          description: Replication status list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  replications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        chunk_id:
+                          type: string
+                          description: Content-addressed ID (BLAKE3)
+                        document_id:
+                          type: string
+                        target_replication_factor:
+                          type: integer
+                        current_replication_factor:
+                          type: integer
+                        status:
+                          type: string
+                        replica_nodes:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              peer_id:
+                                type: string
+                              node_name:
+                                type: string
+                              region:
+                                type: string
+                              replicated_at:
+                                type: string
+                                format: date-time
+                              verified_at:
+                                type: string
+                                format: date-time
+                        total_size_bytes:
+                          type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/replication/replicate:
+    post:
+      summary: Trigger content replication
+      description: Trigger replication of document to P2P network
+      operationId: triggerReplication
+      tags:
+        - Replication
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document_id
+              properties:
+                document_id:
+                  type: string
+                replication_factor:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 3
+                target_regions:
+                  type: array
+                  items:
+                    type: string
+                  example: ["us-west-1", "eu-central-1", "ap-southeast-1"]
+      responses:
+        '202':
+          description: Replication triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  replication_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [in_progress]
+                  estimated_completion_seconds:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Document not found
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Bearer token obtained from `/api/v1/auth/login`.
+        
+        Token structure:
+        ```
+        {
+          "user_id": "usr_abc123",
+          "email": "user@example.com",
+          "roles": ["user"],
+          "exp": 1700000000
+        }
+        ```
+        
+        Access token TTL: 15 minutes
+        Refresh token TTL: 7 days
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-indexed)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    PageSizeParam:
+      name: page_size
+      in: query
+      description: Items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 20
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        version:
+          type: string
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [healthy, degraded, unhealthy]
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - full_name
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "SecureP@ssw0rd"
+        full_name:
+          type: string
+          example: "John Doe"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "SecureP@ssw0rd"
+
+    AuthResponse:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - token_type
+        - expires_in
+        - user
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refresh_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Access token TTL in seconds
+          example: 900
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - full_name
+        - roles
+        - created_at
+      properties:
+        id:
+          type: string
+          example: "usr_2j3k4l5m6n7o8p9q"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        full_name:
+          type: string
+          example: "John Doe"
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [user, admin, power_user]
+          example: ["user"]
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+
+    QueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          example: "What is RAGE and how does it work?"
+        context:
+          type: array
+          description: Previous conversation turns for context
+          items:
+            type: object
+            required:
+              - role
+              - content
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+          example:
+            - role: "user"
+              content: "Tell me about RAGE"
+            - role: "assistant"
+              content: "RAGE is an enterprise RAG platform..."
+        filters:
+          type: object
+          description: Optional filters for document search
+          properties:
+            source_types:
+              type: array
+              items:
+                type: string
+                enum: [confluence, jira, file, slack]
+              example: ["confluence", "jira"]
+            date_range:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date
+                to:
+                  type: string
+                  format: date
+            tags:
+              type: array
+              items:
+                type: string
+              example: ["architecture", "deployment"]
+        search_config:
+          type: object
+          description: Search engine configuration
+          properties:
+            engines:
+              type: array
+              items:
+                type: string
+                enum: [vector, semantic, bm25, hybrid]
+              default: [hybrid]
+            top_k:
+              type: integer
+              minimum: 1
+              maximum: 50
+              default: 10
+            rerank:
+              type: boolean
+              default: true
+        llm_config:
+          type: object
+          description: LLM generation configuration
+          properties:
+            model:
+              type: string
+              example: "gpt-4-turbo"
+            temperature:
+              type: number
+              minimum: 0
+              maximum: 2
+              default: 0.7
+            max_tokens:
+              type: integer
+              minimum: 1
+              maximum: 4000
+              default: 1000
+
+    QueryResponse:
+      type: object
+      required:
+        - query_id
+        - query
+        - answer
+        - citations
+        - cached
+        - latency_ms
+      properties:
+        query_id:
+          type: string
+          example: "qry_2j3k4l5m6n7o8p9q"
+        query:
+          type: string
+        answer:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        cached:
+          type: boolean
+        cache_type:
+          type: string
+          enum: [exact, semantic, null]
+          nullable: true
+        latency_ms:
+          type: integer
+          description: Total query latency in milliseconds
+        model_used:
+          type: string
+          nullable: true
+          example: "gpt-4-turbo"
+        tokens_used:
+          type: integer
+          description: Total tokens consumed (0 if cached)
+        search_metadata:
+          type: object
+          properties:
+            total_documents_searched:
+              type: integer
+            acl_filtered_count:
+              type: integer
+            search_latency_ms:
+              type: integer
+
+    Citation:
+      type: object
+      required:
+        - document_id
+        - title
+        - score
+        - chunk_text
+      properties:
+        document_id:
+          type: string
+          example: "doc_abc123"
+        title:
+          type: string
+          example: "RAGE Architecture Overview"
+        url:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://confluence.example.com/display/RAGE/Architecture"
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Relevance score (0-1)
+        chunk_text:
+          type: string
+          description: Relevant text excerpt
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata (source, author, date, etc.)
+
+    IngestRequest:
+      type: object
+      required:
+        - content
+        - source_type
+      properties:
+        content:
+          type: string
+          description: Document content (text or base64-encoded binary)
+        source_type:
+          type: string
+          enum: [confluence, jira, file, slack, manual]
+        source_id:
+          type: string
+          description: External ID from source system
+          example: "confluence:page:12345678"
+        title:
+          type: string
+          example: "RAGE Architecture Overview"
+        url:
+          type: string
+          format: uri
+          example: "https://confluence.example.com/display/RAGE/Architecture"
+        acl:
+          $ref: '#/components/schemas/ACLPayload'
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Custom metadata
+        chunking_config:
+          type: object
+          properties:
+            strategy:
+              type: string
+              enum: [by_heading, by_tokens, by_paragraphs]
+              default: by_heading
+            chunk_size:
+              type: integer
+              minimum: 50
+              maximum: 2000
+              default: 512
+            chunk_overlap:
+              type: integer
+              minimum: 0
+              maximum: 500
+              default: 200
+
+    ACLPayload:
+      type: object
+      required:
+        - visibility
+      properties:
+        visibility:
+          type: string
+          enum: [public, org, private]
+          description: |
+            - public: Anyone can access
+            - org: Organization members can access
+            - private: Only specified users/groups
+        owner:
+          type: string
+          description: External identity of owner
+          example: "confluence:user:catalin"
+        users:
+          type: array
+          items:
+            type: string
+          description: List of external user identities
+          example: ["confluence:user:alice", "slack:user:U12345"]
+        groups:
+          type: array
+          items:
+            type: string
+          description: List of external group identities
+          example: ["confluence:group:engineering", "slack:channel:C12345"]
+        roles:
+          type: array
+          items:
+            type: string
+          description: Role-based permissions
+          example: ["reader", "editor", "admin"]
+        inherit:
+          type: boolean
+          default: true
+          description: Whether to inherit parent ACLs
+        source:
+          type: object
+          description: ACL source metadata
+          properties:
+            type:
+              type: string
+              example: "confluence"
+            space:
+              type: string
+            page_id:
+              type: string
+            acl_hash:
+              type: string
+              description: Hash of ACL for change detection
+            last_validated_at:
+              type: string
+              format: date-time
+
+    IngestResponse:
+      type: object
+      required:
+        - job_id
+        - status
+        - document_id
+      properties:
+        job_id:
+          type: string
+          example: "ingest_job_abc123"
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        document_id:
+          type: string
+          nullable: true
+          example: "doc_abc123"
+        message:
+          type: string
+          example: "Document accepted for ingestion"
+
+    IngestionJobStatus:
+      type: object
+      required:
+        - job_id
+        - status
+        - created_at
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        document_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        progress:
+          type: object
+          properties:
+            current_step:
+              type: string
+              enum: [extraction, pii_detection, chunking, embedding, storage, acl_registration]
+            chunks_processed:
+              type: integer
+            total_chunks:
+              type: integer
+        error:
+          type: object
+          nullable: true
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+    Document:
+      type: object
+      required:
+        - id
+        - title
+        - source_type
+        - created_at
+      properties:
+        id:
+          type: string
+          example: "doc_2j3k4l5m6n7o8p9q"
+        title:
+          type: string
+        source_type:
+          type: string
+          enum: [confluence, jira, file, slack, manual]
+        source_id:
+          type: string
+        url:
+          type: string
+          format: uri
+        content:
+          type: string
+          description: Full document content
+        acl:
+          $ref: '#/components/schemas/ACLPayload'
+        metadata:
+          type: object
+          additionalProperties: true
+        chunk_count:
+          type: integer
+        embedding_status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    DocumentListResponse:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Pagination:
+      type: object
+      required:
+        - page
+        - page_size
+        - total_items
+        - total_pages
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+    CacheStats:
+      type: object
+      required:
+        - exact_cache
+        - semantic_cache
+        - overall
+      properties:
+        exact_cache:
+          type: object
+          properties:
+            hits:
+              type: integer
+            misses:
+              type: integer
+            hit_rate:
+              type: number
+              format: float
+            size_bytes:
+              type: integer
+            entry_count:
+              type: integer
+        semantic_cache:
+          type: object
+          properties:
+            hits:
+              type: integer
+            misses:
+              type: integer
+            hit_rate:
+              type: number
+            similarity_threshold:
+              type: number
+              format: float
+            average_similarity:
+              type: number
+              format: float
+        overall:
+          type: object
+          properties:
+            total_queries:
+              type: integer
+            cache_hit_rate:
+              type: number
+              format: float
+            average_latency_cached_ms:
+              type: number
+            average_latency_uncached_ms:
+              type: number
+            cost_savings_usd:
+              type: number
+              format: float
+              description: Estimated cost savings from cache hits
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+          example: "invalid_request"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Query cannot be empty"
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error context
+        request_id:
+          type: string
+          description: Request ID for debugging
+          example: "req_abc123xyz"
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            validation_error:
+              value:
+                error: "validation_error"
+                message: "Query cannot be empty"
+                details:
+                  field: "query"
+                  constraint: "minLength"
+                request_id: "req_abc123"
+
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missing_token:
+              value:
+                error: "unauthorized"
+                message: "Bearer token required"
+                request_id: "req_abc123"
+            invalid_token:
+              value:
+                error: "invalid_token"
+                message: "Token has expired or is invalid"
+                request_id: "req_abc123"
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            acl_denied:
+              value:
+                error: "access_denied"
+                message: "You do not have permission to access this document"
+                details:
+                  required_permission: "read"
+                  user_permissions: []
+                request_id: "req_abc123"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            document_not_found:
+              value:
+                error: "not_found"
+                message: "Document with ID 'doc_abc123' does not exist"
+                request_id: "req_abc123"
+
+    Conflict:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            user_exists:
+              value:
+                error: "user_exists"
+                message: "User with email 'user@example.com' already exists"
+                request_id: "req_abc123"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            rate_limit:
+              value:
+                error: "rate_limit_exceeded"
+                message: "Too many requests. Please try again in 60 seconds."
+                details:
+                  limit: 100
+                  window_seconds: 60
+                  retry_after: 45
+                request_id: "req_abc123"
+
+security:
+  - BearerAuth: []
