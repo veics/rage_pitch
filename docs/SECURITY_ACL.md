@@ -20,7 +20,7 @@
 RAGE implements **defense-in-depth security** with fine-grained access control at every layer:
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     %% Title: Security Layers - Defense in Depth
     TITLE["🔒 Security Layers"]
@@ -95,7 +95,7 @@ Every document in RAGE has an embedded ACL payload:
 ### Visibility Levels
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     Public[Public<br/>Anyone can access] --> Org[Organization<br/>Any org member can access]
     Org --> Private[Private<br/>Only specified users/groups/roles]
@@ -117,11 +117,11 @@ graph TB
     
     ParentACL --> UserCheck
     
-    style Public fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style Org fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    style Private fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    style Allow fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px,color:#fff
-    style Deny fill:#b71c1c,stroke:#ef5350,stroke-width:3px,color:#fff
+    style Public fill:#1b5e20,stroke:#81c784,stroke-width:2px
+    style Org fill:#f57f17,stroke:#ffd54f,stroke-width:2px
+    style Private fill:#bf360c,stroke:#ff8a65,stroke-width:2px
+    style Allow fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px
+    style Deny fill:#b71c1c,stroke:#ef5350,stroke-width:3px
     
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
@@ -293,7 +293,7 @@ async function displayCachedAnswer(queryId: string) {
 ### ACL Decision Flow (Detailed)
 
 ```mermaid
-%%{init: {'theme':'dark', 'themeVariables': {'actorTextColor':'#fff', 'noteBkgColor':'#1a237e', 'noteTextColor':'#fff'}, 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'actorTextColor':'#fff', 'noteBkgColor':'#1a237e', 'noteTextColor':'#fff'}}}%%
 sequenceDiagram
     title ACL Decision Flow
     participant User
@@ -375,7 +375,7 @@ acl:usr_abc123:document:doc_xyz789:read
 RAGE maps external identities from different systems to internal user IDs:
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph LR
     subgraph "External Identities"
         Slack[slack:user:U12345ABC]
@@ -399,7 +399,7 @@ graph LR
     
     Mapper --> Internal
     
-    style Internal fill:#1b5e20,stroke:#81c784,stroke-width:3px,color:#fff
+    style Internal fill:#1b5e20,stroke:#81c784,stroke-width:3px
     
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
@@ -652,7 +652,7 @@ ORDER BY denied_count DESC;
 ### Audit Dashboard (Admin UI)
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     %% Title: Security Audit Dashboard Overview
     DASH["📊 Security Audit Dashboard"]
@@ -667,9 +667,9 @@ flowchart TD
     DASH --> PATTERNS
     DASH --> INTEGRITY
     
-    classDef dashboard fill:#0d47a1,stroke:#64b5f6,stroke-width:3px,color:#fff;
-    classDef alert fill:#b71c1c,stroke:#ef5350,stroke-width:2px,color:#fff;
-    classDef ok fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff;
+    classDef dashboard fill:#0d47a1,stroke:#64b5f6,stroke-width:3px;
+    classDef alert fill:#b71c1c,stroke:#ef5350,stroke-width:2px;
+    classDef ok fill:#1b5e20,stroke:#81c784,stroke-width:2px;
     
     class DASH dashboard;
     class DENIED,PATTERNS alert;
@@ -687,7 +687,7 @@ flowchart TD
 RAGE's discovery module tracks data lineage and enables GDPR compliance:
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "Data Discovery"
         Scan[Scan Documents] --> Identify[Identify PII]
@@ -711,8 +711,8 @@ graph TB
         RightObject --> Restrict[Restrict Processing]
     end
     
-    style RightErase fill:#c62828,stroke:#ef5350,stroke-width:2px,color:#fff
-    style Delete fill:#b71c1c,stroke:#ef5350,stroke-width:3px,color:#fff
+    style RightErase fill:#c62828,stroke:#ef5350,stroke-width:2px
+    style Delete fill:#b71c1c,stroke:#ef5350,stroke-width:3px
     
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
@@ -1134,7 +1134,7 @@ async def update_cached_answer_acl(
 ### Cache Statistics (Admin UI)
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     %% Title: Cached Answer Management Dashboard
     CACHE["💾 Cached Answer Management"]
@@ -1149,8 +1149,8 @@ flowchart TD
     CACHE --> TOP
     CACHE --> INVALID
     
-    classDef cache fill:#0d47a1,stroke:#64b5f6,stroke-width:3px,color:#fff;
-    classDef info fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff;
+    classDef cache fill:#0d47a1,stroke:#64b5f6,stroke-width:3px;
+    classDef info fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px;
     
     class CACHE cache;
     class STATS,TOP,INVALID info;
@@ -1180,6 +1180,7 @@ When RAGE instances form a federated network, ACL enforcement must span organiza
 Before any federated query is processed, the trust relationship must be validated:
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'actorTextColor':'#fff', 'noteBkgColor':'#1a237e', 'noteTextColor':'#fff'}}}%%
 sequenceDiagram
     participant LocalUser as Local User
     participant LocalAPI as Local RAGE API

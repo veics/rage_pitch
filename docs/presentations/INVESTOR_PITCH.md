@@ -21,8 +21,8 @@ graph TB
     
     LOGO --> ROUND --> CONTACT
     
-    classDef cover fill:#0d47a1,stroke:#64b5f6,stroke-width:4px,font-size:16px,color:#fff;
-    classDef info fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff;
+    classDef cover fill:#0d47a1,stroke:#64b5f6,stroke-width:4px,font-size:16px;
+    classDef info fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px;
     
     class LOGO cover;
     class ROUND,CONTACT info;
@@ -721,6 +721,7 @@ Join us. Let's build RAGE. Let's fight back.
 
 **Visual:**
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "EvilCorp Model (Current State)"
         A1[Authors Create] -->|Free| M1[Megacorp Scrapes]
@@ -737,10 +738,10 @@ graph TB
         R1 -->|Citations| A2
     end
     
-    style M1 fill:#c62828,stroke:#ef5350,stroke-width:2px,color:#fff
-    style M2 fill:#c62828,stroke:#ef5350,stroke-width:2px,color:#fff
-    style R1 fill:#1b5e20,stroke:#81c784,stroke-width:3px,color:#fff
-    style A2 fill:#f57c00,stroke:#ffb74d,stroke-width:2px,color:#fff
+    style M1 fill:#c62828,stroke:#ef5350,stroke-width:2px
+    style M2 fill:#c62828,stroke:#ef5350,stroke-width:2px
+    style R1 fill:#1b5e20,stroke:#81c784,stroke-width:3px
+    style A2 fill:#f57c00,stroke:#ffb74d,stroke-width:2px
 ```
 
 ---

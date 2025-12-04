@@ -49,9 +49,9 @@ graph TB
         end
     end
     
-    classDef app fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff;
-    classDef data fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff;
-    classDef service fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff;
+    classDef app fill:#0d47a1,stroke:#64b5f6,stroke-width:2px;
+    classDef data fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px;
+    classDef service fill:#1b5e20,stroke:#81c784,stroke-width:2px;
     
     class FE,BE,AG app;
     class PG,NEO,VAL data;
@@ -1311,7 +1311,7 @@ RAGE supports three distributed deployment topologies:
 
 #### Single-Organization Multi-Region
 ```mermaid
-%%{init: {'theme':'dark'}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "US West"
         US1[RAGE Instance 1]

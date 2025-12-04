@@ -75,7 +75,7 @@ RAGE follows a **microservices-inspired monolith** architecture with clear separ
 ### 3.1 Layer Diagram
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TB
     %% Title: Complete Architecture Layers
     subgraph Presentation["Presentation Layer"]
@@ -137,13 +137,13 @@ flowchart TB
     Application -->|MCP Protocol| Orchestration
     Orchestration --> Business
     
-    classDef layer fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff;
+    classDef layer fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px;
     class Presentation,Gateway,Application,Orchestration,Business layer;
     
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     %% Title: Data, LLM, and Monitoring Layers
     
@@ -182,11 +182,11 @@ flowchart TD
     P1 --> DATA
     P2 --> LLM
     
-    classDef headerStyle fill:#263238,stroke:#64b5f6,stroke-width:3px,color:#fff,font-weight:bold;
-    classDef procStyle fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff;
-    classDef dataStyle fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff;
-    classDef llmStyle fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff;
-    classDef monStyle fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff;
+    classDef headerStyle fill:#263238,fill-opacity:0.18,stroke:#64b5f6,stroke-width:3px,font-weight:bold;
+    classDef procStyle fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px;
+    classDef dataStyle fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px;
+    classDef llmStyle fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px;
+    classDef monStyle fill:#1b5e20,fill-opacity:0.18,stroke:#81c784,stroke-width:2px;
     
     class PROC,DATA,LLM,MON headerStyle;
     class P1,P2 procStyle;
@@ -207,112 +207,143 @@ Layer 10 adds distributed capabilities to RAGE, transforming it from a single-in
 #### 3.2.1 Distributed Network Architecture
 
 ```mermaid
-graph TB
-    subgraph "Layer 10: Distributed Network"
-        direction TB
-        P2P[🌐 P2P Network<br/>libp2p Protocol]
-        CDN[⚡ CDN Layer<br/>Multi-Provider]
-        FED[🤝 Federation<br/>Cross-Org Queries]
-        SYNC[🔄 Replication<br/>CRDTs + Sync]
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
+flowchart TD
+    %% Main Layer 10 header
+    L10["<b>Layer 10: Distributed Network</b>"]
+    
+    %% Core network components
+    subgraph CoreNetwork[" "]
+        direction LR
+        P2P["🌐 P2P Network<br/>libp2p Protocol"]
+        CDN["⚡ CDN Layer<br/>Multi-Provider"]
+        FED["🤝 Federation<br/>Cross-Org Queries"]
+        SYNC["🔄 Replication<br/>CRDTs + Sync"]
     end
     
-    subgraph "P2P Components"
-        DISC[Discovery<br/>Central + DHT + mDNS]
-        PEERS[Peer Management<br/>Connection Pool]
-        GOSSIP[Gossipsub<br/>Pub/Sub Messaging]
-        DHT[Kademlia DHT<br/>Content Routing]
+    %% P2P Components group
+    P2P_Title["<b>P2P Components</b>"]
+    subgraph P2PBox[" "]
+        direction LR
+        DISC["Discovery<br/>Central + DHT + mDNS"]
+        PEERS["Peer Management<br/>Connection Pool"]
+        GOSSIP["Gossipsub<br/>Pub/Sub Messaging"]
+        DHT["Kademlia DHT<br/>Content Routing"]
     end
     
-    subgraph "CDN Providers"
-        CF[Cloudflare<br/>Americas]
-        FASTLY[Fastly<br/>Europe]
-        AWS_CF[CloudFront<br/>Asia/Pacific]
-        SELF[Self-Hosted<br/>Varnish/Nginx]
+    %% CDN Providers group
+    CDN_Title["<b>CDN Providers</b>"]
+    subgraph CDNBox[" "]
+        direction LR
+        CF["Cloudflare<br/>Americas"]
+        FASTLY["Fastly<br/>Europe"]
+        AWS_CF["CloudFront<br/>Asia/Pacific"]
+        SELF["Self-Hosted<br/>Varnish/Nginx"]
     end
     
-    subgraph "Federation Services"
-        TRUST[Trust Registry<br/>Explicit Lists]
-        ACL_FED[Federated ACL<br/>Cross-Node Validation]
-        ID_MAP[Identity Mapping<br/>External Users]
+    %% Federation Services group
+    FED_Title["<b>Federation Services</b>"]
+    subgraph FEDBox[" "]
+        direction LR
+        TRUST["Trust Registry<br/>Explicit Lists"]
+        ACL_FED["Federated ACL<br/>Cross-Node Validation"]
+        ID_MAP["Identity Mapping<br/>External Users"]
     end
     
-    P2P --> DISC
-    P2P --> PEERS
-    P2P --> GOSSIP
-    P2P --> DHT
+    %% Vertical flow
+    L10 --> CoreNetwork
     
-    CDN --> CF
-    CDN --> FASTLY
-    CDN --> AWS_CF
-    CDN --> SELF
+    CoreNetwork --> P2P_Title
+    P2P_Title --> P2PBox
     
-    FED --> TRUST
-    FED --> ACL_FED
-    FED --> ID_MAP
+    CoreNetwork --> CDN_Title
+    CDN_Title --> CDNBox
     
-    P2P <--> FED
-    P2P <--> CDN
-    P2P <--> SYNC
+    CoreNetwork --> FED_Title
+    FED_Title --> FEDBox
     
-    classDef networkStyle fill:#004d40,stroke:#4db6ac,stroke-width:2px,color:#fff;
-    classDef p2pStyle fill:#1a237e,stroke:#7986cb,stroke-width:2px,color:#fff;
-    classDef cdnStyle fill:#4a148c,stroke:#ba68c8,stroke-width:2px,color:#fff;
-    classDef fedStyle fill:#b71c1c,stroke:#ef5350,stroke-width:2px,color:#fff;
+    %% Cross-connections between core components
+    P2P -.-> CDN
+    P2P -.-> FED
+    P2P -.-> SYNC
     
+    %% Styling
+    classDef titleStyle fill:#263238,fill-opacity:0.3,stroke:#64b5f6,stroke-width:2px,font-weight:bold,font-size:16px;
+    classDef networkStyle fill:#004d40,fill-opacity:0.18,stroke:#4db6ac,stroke-width:2px,stroke-dasharray:5 5;
+    classDef p2pStyle fill:#1a237e,fill-opacity:0.18,stroke:#7986cb,stroke-width:2px;
+    classDef cdnStyle fill:#4a148c,fill-opacity:0.18,stroke:#ba68c8,stroke-width:2px;
+    classDef fedStyle fill:#b71c1c,fill-opacity:0.18,stroke:#ef5350,stroke-width:2px;
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+    
+    class L10,P2P_Title,CDN_Title,FED_Title titleStyle;
     class P2P,CDN,FED,SYNC networkStyle;
     class DISC,PEERS,GOSSIP,DHT p2pStyle;
     class CF,FASTLY,AWS_CF,SELF cdnStyle;
     class TRUST,ACL_FED,ID_MAP fedStyle;
+    class CoreNetwork,P2PBox,CDNBox,FEDBox boxStyle;
+    
+    linkStyle default stroke:#64b5f6,stroke-width:2px,curve:basis;
 ```
 
 #### 3.2.2 P2P Network Topology
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 80, 'rankSpacing': 120, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
-    subgraph "Organization A - Multi-Region"
+    subgraph OrgA_Box["Organization A - Multi-Region (Cloud)"]
+        direction LR
         A1[RAGE Node A1<br/>US West<br/>Primary]
         A2[RAGE Node A2<br/>US East<br/>Replica]
         A3[RAGE Node A3<br/>EU Central<br/>Replica]
     end
     
-    subgraph "Organization B - Federated Partner"
+    subgraph OrgB_Box["Organization B - Federated Partner (On-Prem)"]
         B1[RAGE Node B1<br/>Partner Org]
     end
     
-    subgraph "CDN Layer (Global)"
-        CDN_GLOBAL[Multi-CDN<br/>Cloudflare + Fastly + CloudFront]
-    end
+    CDN_GLOBAL[Multi-CDN<br/>Cloudflare + Fastly + CloudFront]
     
-    subgraph "Discovery Servers"
+    subgraph Disc_Box["Discovery Servers"]
+        direction LR
         DISC1[Discovery 1<br/>Bootstrap]
         DISC2[Discovery 2<br/>Fallback]
     end
     
+    %% Internal mesh (within box)
     A1 <-->|P2P Full Mesh| A2
     A1 <-->|P2P Full Mesh| A3
     A2 <-->|P2P Full Mesh| A3
     
-    A1 <-.->|Federated Queries<br/>Explicit Trust| B1
+    %% Federation connection - routed through box boundary
+    OrgA_Box <-.->|Federated Queries<br/>Explicit Trust| OrgB_Box
     
-    A1 --> CDN_GLOBAL
-    A2 --> CDN_GLOBAL
-    A3 --> CDN_GLOBAL
-    B1 --> CDN_GLOBAL
+    %% CDN connections - separate vertical flow
+    OrgA_Box --> CDN_GLOBAL
+    OrgB_Box --> CDN_GLOBAL
     
-    A1 -.->|Register + Heartbeat| DISC1
-    A2 -.->|Register + Heartbeat| DISC1
-    B1 -.->|Register + Heartbeat| DISC2
+    %% Discovery connections - routed to avoid crossing
+    OrgA_Box -.->|Register + Heartbeat| DISC1
+    OrgB_Box -.->|Register + Heartbeat| DISC2
     
-    style A1 fill:#4CAF50
-    style A2 fill:#4CAF50
-    style A3 fill:#4CAF50
-    style B1 fill:#2196F3
-    style CDN_GLOBAL fill:#FF9800
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+    classDef nodeStyleA fill:#4CAF50,fill-opacity:0.18,stroke:#2e7d32,stroke-width:2px;
+    classDef nodeStyleB fill:#2196F3,fill-opacity:0.18,stroke:#1565c0,stroke-width:2px;
+    classDef nodeStyleCDN fill:#FF9800,fill-opacity:0.18,stroke:#ef6c00,stroke-width:2px;
+    classDef nodeStyleDisc fill:#9C27B0,fill-opacity:0.18,stroke:#7b1fa2,stroke-width:2px;
+    
+    class OrgA_Box,OrgB_Box,Disc_Box boxStyle;
+    class A1,A2,A3 nodeStyleA;
+    class B1 nodeStyleB;
+    class CDN_GLOBAL nodeStyleCDN;
+    class DISC1,DISC2 nodeStyleDisc;
+
+    linkStyle default stroke:#64b5f6,stroke-width:2px,curve:basis;
 ```
 
 #### 3.2.3 Federated Query Flow
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'actorTextColor':'#fff', 'noteBkgColor':'#1a237e', 'noteTextColor':'#fff'}}}%%
 sequenceDiagram
     participant User
     participant Node_A as RAGE Node A<br/>(Local)
@@ -350,38 +381,41 @@ sequenceDiagram
 #### 3.2.4 CDN Cache Flow
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart LR
-    USER[User Request] --> LB{Load Balancer}
-    
-    LB -->|Geographic Routing| CDN1[Cloudflare<br/>Americas]
+    LB{Load Balancer} -->|Geographic Routing| CDN1[Cloudflare<br/>Americas]
     LB -->|Geographic Routing| CDN2[Fastly<br/>Europe]
     LB -->|Geographic Routing| CDN3[CloudFront<br/>Asia]
     
     CDN1 -->|Cache MISS| ORIGIN1[RAGE Node 1]
     CDN2 -->|Cache MISS| ORIGIN2[RAGE Node 2]
-    CDN3 -->|Cache MISS| ORIGIN3[RAGE Node 3]
-    
-    CDN1 -->|Cache HIT| USER
-    CDN2 -->|Cache HIT| USER
-    CDN3 -->|Cache HIT| USER
     
     ORIGIN1 --> P2P{P2P Network}
     ORIGIN2 --> P2P
-    ORIGIN3 --> P2P
     
     P2P -->|Replicated Content| ORIGIN1
     P2P -->|Replicated Content| ORIGIN2
-    P2P -->|Replicated Content| ORIGIN3
     
-    style CDN1 fill:#FF5722
-    style CDN2 fill:#9C27B0
-    style CDN3 fill:#FF9800
-    style P2P fill:#004D40
+    P2P -->|Replicated Content| ORIGIN3[RAGE Node 3]
+    P2P --> ORIGIN3
+    CDN3 -->|Cache MISS| ORIGIN3
+    
+    CDN2 -->|Cache HIT| USER[User Request]
+    CDN1 -->|Cache HIT| USER
+    CDN3 -->|Cache HIT| USER
+    
+    style CDN1 fill:#FF5722,fill-opacity:0.18
+    style CDN2 fill:#9C27B0,fill-opacity:0.18
+    style CDN3 fill:#FF9800,fill-opacity:0.18
+    style P2P fill:#004D40,fill-opacity:0.18
+
+    linkStyle default stroke-width:2px;
 ```
 
 #### 3.2.5 Content Replication Strategy
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     DOC[New Document Ingested] --> CHUNK[Chunk Document]
     
@@ -411,14 +445,17 @@ flowchart TD
     
     DHT --> CDN_PUSH[Push to CDN<br/>Edge Nodes]
     
-    style POLICY fill:#FFC107
-    style GOSSIP fill:#3F51B5
-    style DHT fill:#009688
+    style POLICY fill:#FFC107,fill-opacity:0.18
+    style GOSSIP fill:#3F51B5,fill-opacity:0.18
+    style DHT fill:#009688,fill-opacity:0.18
+
+    linkStyle default stroke-width:2px;
 ```
 
 #### 3.2.6 Trust Relationship Model
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 stateDiagram-v2
     [*] --> Pending: Admin initiates trust
     
@@ -548,64 +585,65 @@ sequenceDiagram
 > - Diagrams in this document use standard Mermaid (`graph`, `flowchart`, `sequenceDiagram`) for broad compatibility.
 > - Where applicable in other docs, beta charts include labeled fallbacks. This file avoids beta features to ensure consistent rendering.
 
+
 ### 4.2 Query Processing Flow (3D Architecture View)
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
-graph TB
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 10, 'rankSpacing': 60, 'curve': 'basis', 'useMaxWidth': true}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
+graph TD
     %% Title: 3D Architecture Layers
-    subgraph "Layer 1: Presentation"
+    subgraph Layer_1["Layer 1: Presentation"]
         User[👤 User]
         UI[🖥️ Frontend UI<br/>React + Mantine]
     end
-    
-    subgraph "Layer 2: Gateway"
+
+    subgraph Layer_2["Layer 2: Gateway"]
         Gateway[🚪 API Gateway<br/>Nginx/Traefik<br/>SSL + Load Balancer]
     end
-    
-    subgraph "Layer 3: Application"
+
+    subgraph Layer_3["Layer 3: Application"]
         API[⚡ FastAPI<br/>Query Router<br/>Auth + Validation]
         Cache{💾 Valkey Cache<br/>Exact + Semantic}
     end
-    
-    subgraph "Layer 4: Orchestration"
+
+    subgraph Layer_4["Layer 4: Orchestration"]
         Orch[🎯 Query Orchestrator<br/>MCP Coordinator]
     end
-    
-    subgraph "Layer 5: Agent Network"
+
+    subgraph Layer_5["Layer 5: Agent Network"]
         direction LR
         CM[🧠 Concept<br/>Mapper<br/>NER + Relations]
         DR[📚 Document<br/>Retriever<br/>Hybrid Search]
         AS[✍️ Answer<br/>Synthesizer<br/>LLM Generation]
         QA[🔍 Query<br/>Analyzer<br/>Intent Detection]
     end
-    
-    subgraph "Layer 6: Data Storage"
+
+    subgraph Layer_6["Layer 6: Data Storage"]
         direction LR
         Neo4j[(🕸️ Neo4j<br/>Knowledge Graph<br/>Vectors + Relations)]
         PG[(🗄️ PostgreSQL<br/>Structured Data<br/>Metadata)]
     end
-    
-    subgraph "Layer 7: LLM Providers"
+
+    subgraph Layer_7["Layer 7: LLM Providers"]
         direction LR
         Ollama[🦙 Ollama<br/>Local Models]
         OpenAI[🤖 OpenAI<br/>GPT-4]
         Claude[🎭 Anthropic<br/>Claude]
         Custom[⚙️ Custom<br/>Endpoints]
     end
-    
+
     User -->|Submit Query| UI
     UI -->|HTTPS| Gateway
     Gateway -->|Route| API
     API -->|Check| Cache
     Cache -.->|Hit| API
     Cache -->|Miss| Orch
-    
+
     Orch -->|MCP Tasks| CM
     Orch -->|MCP Tasks| DR
     Orch -->|MCP Tasks| AS
     Orch -->|MCP Tasks| QA
-    
+
     CM <-->|Cypher| Neo4j
     DR <-->|Cypher + SQL| Neo4j
     DR <-->|SQL| PG
@@ -613,522 +651,375 @@ graph TB
     AS -->|Generate| OpenAI
     AS -->|Generate| Claude
     AS -->|Generate| Custom
-    
+
     CM -->|Results| Orch
     DR -->|Results| Orch
     AS -->|Results| Orch
     QA -->|Results| Orch
-    
+
     Orch -->|Aggregate| API
     API -->|Cache| Cache
     API -->|Response| UI
     UI -->|Display| User
+
+    style User fill:#1a237e,fill-opacity:0.18,stroke:#7986cb,stroke-width:3px
+    style UI fill:#1565c0,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px
+    style Gateway fill:#0277bd,fill-opacity:0.18,stroke:#4fc3f7,stroke-width:2px
+    style API fill:#01579b,fill-opacity:0.18,stroke:#4dd0e1,stroke-width:2px
+    style Cache fill:#006064,fill-opacity:0.18,stroke:#4db6ac,stroke-width:2px
+    style Orch fill:#004d40,fill-opacity:0.18,stroke:#26a69a,stroke-width:3px
+    style CM fill:#1b5e20,fill-opacity:0.18,stroke:#66bb6a,stroke-width:2px
+    style DR fill:#33691e,fill-opacity:0.18,stroke:#9ccc65,stroke-width:2px
+    style AS fill:#827717,fill-opacity:0.18,stroke:#dce775,stroke-width:2px
+    style QA fill:#f57f17,fill-opacity:0.18,stroke:#ffb74d,stroke-width:2px
+    style Neo4j fill:#4a148c,fill-opacity:0.18,stroke:#ba68c8,stroke-width:2px
+    style PG fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px
+    style Ollama fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px
+    style OpenAI fill:#d84315,fill-opacity:0.18,stroke:#ff7043,stroke-width:2px
+    style Claude fill:#c62828,fill-opacity:0.18,stroke:#ef5350,stroke-width:2px,color:#fff
+    style Custom fill:#880e4f,fill-opacity:0.18,stroke:#f06292,stroke-width:2px,color:#fff
+
+    %% Styling
+    classDef titleStyle fill:#263238,fill-opacity:0.3,stroke:#64b5f6,stroke-width:2px,font-weight:bold,font-size:16px;
+    classDef networkStyle fill:#004d40,fill-opacity:0.18,stroke:#4db6ac,stroke-width:2px,stroke-dasharray:5 5;
+    classDef p2pStyle fill:#1a237e,fill-opacity:0.18,stroke:#7986cb,stroke-width:2px;
+    classDef cdnStyle fill:#4a148c,fill-opacity:0.18,stroke:#ba68c8,stroke-width:2px;
+    classDef fedStyle fill:#b71c1c,fill-opacity:0.18,stroke:#ef5350,stroke-width:2px;
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+
+    classDef spacer opacity:0;
     
-    style User fill:#1a237e,stroke:#7986cb,stroke-width:3px,color:#fff
-    style UI fill:#1565c0,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style Gateway fill:#0277bd,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style API fill:#01579b,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style Cache fill:#006064,stroke:#4db6ac,stroke-width:2px,color:#fff
-    style Orch fill:#004d40,stroke:#26a69a,stroke-width:3px,color:#fff
-    style CM fill:#1b5e20,stroke:#66bb6a,stroke-width:2px,color:#fff
-    style DR fill:#33691e,stroke:#9ccc65,stroke-width:2px,color:#fff
-    style AS fill:#827717,stroke:#dce775,stroke-width:2px,color:#fff
-    style QA fill:#f57f17,stroke:#ffb74d,stroke-width:2px,color:#fff
-    style Neo4j fill:#4a148c,stroke:#ba68c8,stroke-width:2px,color:#fff
-    style PG fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff
-    style Ollama fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    style OpenAI fill:#d84315,stroke:#ff7043,stroke-width:2px,color:#fff
-    style Claude fill:#c62828,stroke:#ef5350,stroke-width:2px,color:#fff
-    style Custom fill:#880e4f,stroke:#f06292,stroke-width:2px,color:#fff
-    
+    class L10,P2P_Title,CDN_Title,FED_Title titleStyle;
+    class P2P,CDN,FED,SYNC networkStyle;
+    class DISC,PEERS,GOSSIP,DHT p2pStyle;
+    class CF,FASTLY,AWS_CF,SELF cdnStyle;
+    class TRUST,ACL_FED,ID_MAP fedStyle;
+    class Layer_1,Layer_2,Layer_3,Layer_4,Layer_5,Layer_6,Layer_7 boxStyle;
+
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 
-### 4.2 Document Ingestion Flow (Mermaid Flowchart)
+### 4.2.1 AI Orchestration Interactions
+
+#### 4.2.1.1 Event Trigger to Workflow Execution
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'actorTextColor':'#fff', 'noteBkgColor':'#1a237e', 'noteTextColor':'#fff'}}}%%
+sequenceDiagram
+    participant System
+    participant Trigger as Event Trigger
+    participant Workflow as Workflow Engine
+    participant Task as Task Queue
+    participant User
+
+    System->>Trigger: Document ingested
+    Trigger->>Workflow: Start workflow for document analysis
+    Workflow->>Task: Create tasks for concept extraction, document retrieval
+    Task->>User: Notify when tasks are complete
+```
+
+#### 4.2.1.2 Workflow Example: Ingest & Analyze
+
+```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
+flowchart TD
+    %% Title: Workflow 1 - Ingest & Analyze
+    START["📥 Document Ingested"]
+    
+    PARSE["1️⃣ Parse Document<br/>Extract text, metadata"]
+    
+    CHUNK["2️⃣ Chunk Text<br/>Size: 512 tokens<br/>Overlap: 50"]
+    
+    EMBED["3️⃣ Generate Embeddings<br/>(Ollama)"]
+    
+    STORE["4️⃣ Store Metadata + Vectors"]
+    
+    NOTIFY["5️⃣ Notify Completion<br/>User: user@example.com"]
+    
+    START --> PARSE
+    PARSE --> CHUNK
+    CHUNK --> EMBED
+    EMBED --> STORE
+    STORE --> NOTIFY
+    
+    style START fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px
+    style PARSE fill:#0277bd,fill-opacity:0.18,stroke:#4fc3f7,stroke-width:2px
+    style CHUNK fill:#006064,fill-opacity:0.18,stroke:#4db6ac,stroke-width:2px
+    style EMBED fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px
+    style STORE fill:#1b5e20,fill-opacity:0.18,stroke:#66bb6a,stroke-width:2px
+    style NOTIFY fill:#c62828,fill-opacity:0.18,stroke:#ef5350,stroke-width:2px
+
+    linkStyle default stroke:#64b5f6,stroke-width:2px;
+```
+
+### 4.3 Document Ingestion Flow (Mermaid Flowchart)
+
+```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     %% Title: Document Ingestion Flow
-    User[👤 User Upload<br/>PDF/DOCX/MD]
+    UPL["📤 Document Upload<br/>PDF/TXT/DOCX"]
     
-    Upload[📤 Upload API<br/>POST /upload<br/>Validate & Hash]
+    VAL["✅ Validation<br/>• File type<br/>• Size limit<br/>• Virus scan"]
     
-    Storage[(💾 MinIO/S3<br/>Raw Files)]
+    DEDUP{"🔍 Deduplication<br/>Check hash"}
     
-    Dedup{🔍 Deduplication<br/>Check Hash}
+    EXISTS["✅ Document exists<br/>Return doc_id"]
     
-    Queue[📋 Valkey Queue<br/>Task Assignment]
+    PARSE["📖 Parse Document<br/>Extract text,<br/>metadata, images"]
     
-    Worker[⚙️ Document Processor<br/>Worker Agent]
+    CHUNK["✂️ Chunking<br/>512 tokens<br/>50% overlap"]
     
-    subgraph "Parallel Parsing"
-        PDF[📄 PDF Parser<br/>pypdf2]
-        DOCX[📘 DOCX Parser<br/>python-docx]
-        MD[📝 Markdown<br/>Parser]
-        HTML[🌐 HTML Parser<br/>BeautifulSoup]
+    EMBED["🧮 Embeddings<br/>Generate vectors<br/>(Ollama/API)"]
+    
+    STORE["💾 Storage<br/>PostgreSQL<br/>+ Neo4j<br/>+ S3"]
+    
+    CONCEPT["🧠 Concept Extraction<br/>NER, Relations<br/>Entity linking"]
+    
+    GRAPH["🕸️ Graph Building<br/>Link to knowledge<br/>graph nodes"]
+    
+    NOTIFY["📢 Notification<br/>User informed<br/>Document ready"]
+    
+    UPL --> VAL
+    VAL --> DEDUP
+    DEDUP -->|Exists| EXISTS
+    DEDUP -->|New| PARSE
+    PARSE --> CHUNK
+    CHUNK --> EMBED
+    EMBED --> STORE
+    STORE --> CONCEPT
+    CONCEPT --> GRAPH
+    GRAPH --> NOTIFY
+    
+    style UPL fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px
+    style VAL fill:#0277bd,fill-opacity:0.18,stroke:#4fc3f7,stroke-width:2px
+    style DEDUP fill:#f57f17,fill-opacity:0.18,stroke:#ffd54f,stroke-width:2px
+    style PARSE fill:#006064,fill-opacity:0.18,stroke:#4db6ac,stroke-width:2px
+    style CHUNK fill:#1b5e20,fill-opacity:0.18,stroke:#81c784,stroke-width:2px
+    style EMBED fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px
+    style STORE fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px
+    style CONCEPT fill:#7b1fa2,fill-opacity:0.18,stroke:#ba68c8,stroke-width:2px
+    style GRAPH fill:#512da8,fill-opacity:0.18,stroke:#9575cd,stroke-width:2px
+    style NOTIFY fill:#c62828,fill-opacity:0.18,stroke:#ef5350,stroke-width:2px
+
+    linkStyle default stroke:#64b5f6,stroke-width:2px;
+```
+
+### 4.4 Agent Communication (MCP Protocol)
+
+```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
+sequenceDiagram
+    participant Orch as Orchestrator
+    participant CM as Concept Mapper<br/>(MCP Client)
+    participant DR as Doc Retriever<br/>(MCP Client)
+    participant AS as Answer Synth<br/>(MCP Client)
+    
+    Orch->>CM: invoke_task(extract_concepts)
+    CM->>CM: Process query
+    CM-->>Orch: task_result
+    
+    Orch->>DR: invoke_task(search_documents)
+    DR->>DR: Vector + keyword search
+    DR-->>Orch: task_result
+    
+    Orch->>AS: invoke_task(generate_answer)
+    AS->>AS: Build prompt, call LLM
+    AS-->>Orch: task_result
+    
+    Orch->>Orch: Aggregate results
+```
+
+### 4.5 3D Agent Neural Network Visualization
+
+```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 80, 'rankSpacing': 120, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
+graph TB
+    %% Title: Agent Neural Network (3D-like visualization)
+    
+    subgraph Box1["Query Input Layer"]
+        Q["🎤 Query"]
     end
     
-    Chunker[✂️ Text Chunker<br/>Sliding Window<br/>512 tokens + 50 overlap]
-    
-    Embedder[🧮 Embedding Generator<br/>Ollama: nomic-embed-text<br/>768-dim vectors]
-    
-    PG[(🗄️ PostgreSQL<br/>Metadata + Chunks)]
-    Neo[(🕸️ Neo4j<br/>Vectors + Graph)]
-    
-    Concept[🧠 Concept Mapper<br/>Extract Entities<br/>Relations]
-    
-    Graph[(🕸️ Neo4j Graph<br/>Concepts<br/>Entities<br/>Relations)]
-    
-    Complete[✅ Completion<br/>Notify User<br/>Update Indexes]
-    
-    User -->|1. Upload File| Upload
-    Upload -->|2. Store Raw| Storage
-    Upload -->|3. Check| Dedup
-    
-    Dedup -->|Exists| Complete
-    Dedup -->|New| Queue
-    
-    Queue -->|4. Assign| Worker
-    
-    Worker -->|5. Route by Type| PDF
-    Worker -->|5. Route by Type| DOCX
-    Worker -->|5. Route by Type| MD
-    Worker -->|5. Route by Type| HTML
-    
-    PDF -->|Extracted Text| Chunker
-    DOCX -->|Extracted Text| Chunker
-    MD -->|Extracted Text| Chunker
-    HTML -->|Extracted Text| Chunker
-    
-    Chunker -->|6. Chunks| Embedder
-    
-    Embedder -->|7a. Store Metadata| PG
-    Embedder -->|7b. Store Vectors| Neo
-    Embedder -->|8. Extract Concepts| Concept
-    
-    Concept -->|9. Build Graph| Graph
-    
-    PG -->|10. Done| Complete
-    Neo -->|10. Done| Complete
-    Graph -->|10. Done| Complete
-    
-    style User fill:#1a237e,stroke:#7986cb,stroke-width:2px,color:#fff
-    style Upload fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style Storage fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style Dedup fill:#0277bd,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style Queue fill:#0288d1,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style Worker fill:#039be5,stroke:#81d4fa,stroke-width:2px,color:#fff
-    style PDF fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style DOCX fill:#2e7d32,stroke:#a5d6a7,stroke-width:2px,color:#fff
-    style MD fill:#388e3c,stroke:#66bb6a,stroke-width:2px,color:#fff
-    style HTML fill:#43a047,stroke:#9ccc65,stroke-width:2px,color:#fff
-    style Chunker fill:#e65100,stroke:#ffb74d,stroke-width:2px,color:#fff
-    style Embedder fill:#ef6c00,stroke:#ffa726,stroke-width:2px,color:#fff
-    style PG fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff
-    style Neo fill:#7b1fa2,stroke:#ba68c8,stroke-width:2px,color:#fff
-    style Concept fill:#8e24aa,stroke:#ab47bc,stroke-width:2px,color:#fff
-    style Graph fill:#4a148c,stroke:#ce93d8,stroke-width:2px,color:#fff
-    style Complete fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px,color:#fff
-    
-    linkStyle default stroke:#64b5f6,stroke-width:2px;
-```
-
-### 4.3 Agent Communication (MCP Protocol)
-
-```mermaid
-%%{init: {'theme':'dark', 'themeVariables': {'actorTextColor':'#fff', 'noteBkgColor':'#1a237e', 'noteTextColor':'#fff'}}}%%
-sequenceDiagram
-    participant Orch as Query Orchestrator
-    participant CM as Concept Mapper Agent
-    participant DR as Document Retriever Agent
-    participant AS as Answer Synthesizer Agent
-    
-    Orch->>CM: 1. TASK_ASSIGN<br/>{task_id, type: "concept_extraction"}
-    
-    activate CM
-    CM->>CM: 2. Process Task<br/>Extract Concepts
-    
-    CM->>Orch: 3. TASK_PROGRESS<br/>{progress: 50%, status: "Extracting..."}
-    
-    CM->>CM: 4. Continue Processing
-    
-    CM->>Orch: 5. TASK_COMPLETE<br/>{success: true, output: [...], confidence: 0.92}
-    deactivate CM
-    
-    par Parallel Task Assignment
-        Orch->>DR: TASK_ASSIGN<br/>{task_id, type: "document_search"}
-        Orch->>AS: TASK_ASSIGN<br/>{task_id, type: "answer_generation"}
+    subgraph Box2["Processing Layer"]
+        direction LR
+        CM["🧠 Concept<br/>Mapper"]
+        QA["🔍 Query<br/>Analyzer"]
+        DR["📚 Document<br/>Retriever"]
     end
     
-    activate DR
-    activate AS
+    subgraph Box3["Synthesis Layer"]
+        AS["✍️ Answer<br/>Synthesizer"]
+    end
     
-    DR->>Orch: TASK_PROGRESS<br/>{progress: 30%}
-    AS->>Orch: TASK_PROGRESS<br/>{progress: 20%}
+    subgraph Box4["Output Layer"]
+        OUT["📝 Response<br/>+ Citations"]
+    end
     
-    DR->>Orch: TASK_COMPLETE<br/>{documents: [10 docs]}
-    deactivate DR
+    Q --> CM
+    Q --> QA
+    Q --> DR
     
-    AS->>Orch: TASK_COMPLETE<br/>{answer: "...", citations: [...]}
-    deactivate AS
+    CM --> AS
+    QA --> AS
+    DR --> AS
     
-    Orch->>Orch: Aggregate All Results
-```
+    AS --> OUT
+    
+    %% Styling
+    classDef titleStyle fill:#263238,fill-opacity:0.3,stroke:#64b5f6,stroke-width:2px,font-weight:bold,font-size:16px;
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
 
-### 4.4 3D Agent Neural Network Visualization
+    class Box1,Box2,Box3,Box4 boxStyle;
 
-```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
-flowchart TD
-    %% Title: Agent Neural Network - Query to Answer Flow
-    
-    Q[🎤 User Query<br/>'How does RAGE work?']
-    PROCESS["🔍 Query Processing Layer"]
-    Q --> PROCESS
-    
-    QE[Query Embedding<br/>768-dim vector]
-    QI[Intent Classifier<br/>Technical Documentation]
-    PROCESS --> QE & QI
-    
-    CONCEPTS["💡 Concept Mapping Layer"]
-    QE & QI --> CONCEPTS
-    
-    C1[RAG]
-    C2[Architecture]
-    C3[API]
-    C4[Database]
-    C5[Agents]
-    CONCEPTS --> C1 & C2 & C3 & C4 & C5
-    
-    RETRIEVAL["📄 Document Retrieval Layer"]
-    C1 & C2 & C3 & C4 & C5 --> RETRIEVAL
-    
-    D1[ARCHITECTURE.md • 0.95]
-    D2[API_SPEC.md • 0.87]
-    D3[AGENTS.md • 0.82]
-    D4[DATABASE.md • 0.75]
-    D5[README.md • 0.70]
-    RETRIEVAL --> D1 & D2 & D3 & D4 & D5
-    
-    CONTEXT["📦 Context Assembly Layer"]
-    D1 & D2 & D3 & D4 & D5 --> CONTEXT
-    
-    CTX1[Architecture Overview]
-    CTX2[Agent System]
-    CTX3[Data Flow]
-    CTX4[API Endpoints]
-    CONTEXT --> CTX1 & CTX2 & CTX3 & CTX4
-    
-    GENERATION["🤖 Answer Generation Layer"]
-    CTX1 & CTX2 & CTX3 & CTX4 --> GENERATION
-    
-    LLM[LLM Generator<br/>GPT-4 / Claude / Llama]
-    GENERATION --> LLM
-    
-    OUTPUT["📝 Output Layer"]
-    LLM --> OUTPUT
-    
-    ANS[Generated Answer<br/>with Citations]
-    CONF[Confidence: 0.92]
-    OUTPUT --> ANS & CONF
-    
-    ANS -.->|Cache| Q
-    
-    style Q fill:#1a237e,stroke:#7986cb,stroke-width:3px,color:#fff
-    
-    style PROCESS fill:#263238,stroke:#64b5f6,stroke-width:3px,color:#fff,font-weight:bold
-    style QE fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style QI fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    
-    style CONCEPTS fill:#263238,stroke:#ffd54f,stroke-width:3px,color:#fff,font-weight:bold
-    style C1 fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    style C2 fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    style C3 fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    style C4 fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    style C5 fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    
-    style RETRIEVAL fill:#263238,stroke:#81c784,stroke-width:3px,color:#fff,font-weight:bold
-    style D1 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style D2 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style D3 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style D4 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style D5 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    
-    style CONTEXT fill:#263238,stroke:#ff8a65,stroke-width:3px,color:#fff,font-weight:bold
-    style CTX1 fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    style CTX2 fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    style CTX3 fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    style CTX4 fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    
-    style GENERATION fill:#263238,stroke:#ce93d8,stroke-width:3px,color:#fff,font-weight:bold
-    style LLM fill:#6a1b9a,stroke:#ce93d8,stroke-width:3px,color:#fff
-    
-    style OUTPUT fill:#263238,stroke:#a5d6a7,stroke-width:3px,color:#fff,font-weight:bold
-    style ANS fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px,color:#fff
-    style CONF fill:#2e7d32,stroke:#a5d6a7,stroke-width:2px,color:#fff
-    
+    style Q fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:3px
+    style CM fill:#1b5e20,fill-opacity:0.18,stroke:#81c784,stroke-width:2px
+    style QA fill:#0277bd,fill-opacity:0.18,stroke:#4fc3f7,stroke-width:2px
+    style DR fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px
+    style AS fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px
+    style OUT fill:#2e7d32,fill-opacity:0.18,stroke:#a5d6a7,stroke-width:3px
+
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 
-### 4.5 Container Architecture (Detailed Topology)
+### 4.6 Container Architecture (Detailed Topology)
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 15, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-flowchart LR
-    %% Title: Container Architecture - Simplified View
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 60, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
+graph TB
+    %% Title: Complete Container Architecture
     
-    Users[👥 Users & Admins]
+    subgraph Box1["Frontend"]
+        UI["🖥️ Frontend UI<br/>React + Mantine<br/>Port 3000"]
+    end
     
-    LB[🚪 Gateway<br/>⚖️ Load Balancer<br/>Nginx/Traefik<br/>:80, :443]
+    subgraph Box2["Gateway & API"]
+        NGINX["🚪 Nginx/Traefik<br/>Load Balancer<br/>Ports 80, 443"]
+        API1["⚡ FastAPI (1)<br/>Query Router<br/>Port 8000"]
+        API2["⚡ FastAPI (2)<br/>Port 8001"]
+    end
     
-    API["⚡ Core Services<br/>API Servers (x3)<br/>rage-api-1/2/3<br/>:8000-8002"]
+    subgraph Box3["Agents"]
+        CM["🧠 Concept Mapper<br/>Port 8100"]
+        DR["📚 Doc Retriever<br/>Port 8101"]
+        AS["✍️ Answer Synth<br/>Port 8102"]
+        QA["🔍 Query Analyzer<br/>Port 8103"]
+    end
     
-    AG["🧠 Agent Services<br/>Concept Mapper<br/>Document Retriever<br/>Answer Synthesizer<br/>Query Analyzer<br/>:8100-8103"]
+    subgraph Box4["Data Layer"]
+        PG["🗄️ PostgreSQL<br/>Port 5432"]
+        NEO["🕸️ Neo4j<br/>Port 7687"]
+        CACHE["💾 Valkey<br/>Port 6379"]
+    end
     
-    NEW["✨ Advanced Services<br/>Workflow Service<br/>Profile Service<br/>Temporal Service<br/>:8006-8008"]
+    subgraph Box5["LLM Layer"]
+        OLLAMA["🦙 Ollama<br/>Port 11434"]
+    end
     
-    INT["🔗 Integrations<br/>Confluence • Jira<br/>Slack Bot<br/>:8200-8202"]
+    UI --> NGINX
+    NGINX --> API1
+    NGINX --> API2
     
-    DB["💾 Data Layer<br/>PostgreSQL :5432<br/>Neo4j :7474/7687<br/>Valkey :6379<br/>MinIO :9000"]
+    API1 --> CM
+    API1 --> DR
+    API1 --> AS
+    API1 --> QA
     
-    LLMS["🤖 LLM Layer<br/>LLM Router :8300<br/>Ollama :11434<br/>→ Cloud Providers"]
+    API2 --> CM
+    API2 --> DR
+    API2 --> AS
+    API2 --> QA
     
-    MON["📊 Monitoring<br/>Netdata :19999<br/>Prometheus :9090<br/>Grafana :3000<br/>Jaeger :16686<br/>Loki :3100"]
+    CM --> NEO
+    DR --> NEO
+    DR --> PG
+    AS --> CACHE
     
-    NOTIFY["📧 Notifications<br/>Email • Slack<br/>PagerDuty"]
+    AS --> OLLAMA
     
-    Users -->|HTTPS| LB
-    LB -->|Round Robin| API
-    API -->|MCP| AG
-    API -->|HTTP| NEW
-    API -->|HTTP| INT
-    AG -->|Cypher/SQL| DB
-    NEW -->|SQL/HTTP| DB
-    INT -->|S3/SQL/Redis| DB
-    AG -->|HTTP| LLMS
-    NEW -->|HTTP| LLMS
-    API -->|Metrics/Traces/Logs| MON
-    AG -->|Metrics/Traces/Logs| MON
-    NEW -->|Metrics/Traces/Logs| MON
-    DB -->|Metrics/Logs| MON
-    MON -.->|Alerts| NOTIFY
-    
-    style Users fill:#1a237e,stroke:#7986cb,stroke-width:3px,color:#fff
-    style LB fill:#0277bd,stroke:#4fc3f7,stroke-width:3px,color:#fff
-    style API fill:#0d47a1,stroke:#64b5f6,stroke-width:3px,color:#fff
-    style AG fill:#1b5e20,stroke:#81c784,stroke-width:3px,color:#fff
-    style NEW fill:#f57f17,stroke:#ffd54f,stroke-width:3px,color:#000
-    style INT fill:#e65100,stroke:#ffb74d,stroke-width:3px,color:#fff
-    style DB fill:#6a1b9a,stroke:#ce93d8,stroke-width:3px,color:#fff
-    style LLMS fill:#bf360c,stroke:#ff8a65,stroke-width:3px,color:#fff
-    style MON fill:#01579b,stroke:#4fc3f7,stroke-width:3px,color:#fff
-    style NOTIFY fill:#b71c1c,stroke:#ef5350,stroke-width:2px,color:#fff
-    
+    %% Styling
+    classDef titleStyle fill:#263238,fill-opacity:0.3,stroke:#64b5f6,stroke-width:2px,font-weight:bold,font-size:16px;
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+
+    class Box1,Box2,Box3,Box4,Box5 boxStyle;
+
+    style UI fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px
+    style NGINX fill:#0277bd,fill-opacity:0.18,stroke:#4fc3f7,stroke-width:3px
+    style API1 fill:#01579b,fill-opacity:0.18,stroke:#4dd0e1,stroke-width:2px
+    style API2 fill:#01579b,fill-opacity:0.18,stroke:#4dd0e1,stroke-width:2px
+    style CM fill:#1b5e20,fill-opacity:0.18,stroke:#81c784,stroke-width:2px
+    style DR fill:#33691e,fill-opacity:0.18,stroke:#9ccc65,stroke-width:2px
+    style AS fill:#827717,fill-opacity:0.18,stroke:#dce775,stroke-width:2px
+    style QA fill:#f57f17,fill-opacity:0.18,stroke:#ffb74d,stroke-width:2px
+    style PG fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px
+    style NEO fill:#4a148c,fill-opacity:0.18,stroke:#ba68c8,stroke-width:2px
+    style CACHE fill:#006064,fill-opacity:0.18,stroke:#4db6ac,stroke-width:2px
+    style OLLAMA fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px
+
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 
-### 4.6 Advanced Services (NEW)
+### 4.7 Advanced Services (NEW)
 
-#### 4.6.1 Workflow Service (Port 8006)
+#### 4.7.1 Workflow Service
 
-The **Workflow Service** provides scheduled task automation and event-driven workflows for RAGE.
+Manages complex, multi-step workflows triggered by events (document ingestion, query analysis, etc.).
 
-**Key Capabilities**:
-- **Cron-based Scheduling**: Run workflows on time-based schedules (daily, weekly, monthly)
-- **Event Triggers**: Execute workflows based on system events (document ingested, query completed, ACL changed)
-- **Multi-step Execution**: Chain multiple agents/actions in sequence with variable passing
-- **Templates**: Pre-built workflows for common patterns (daily digest, weekly reports, auto-archival)
+**Capabilities**:
+- Event-driven workflow orchestration
+- Task queuing and scheduling
+- Retry logic with exponential backoff
+- Progress tracking and notifications
 
-```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
-flowchart LR
-    CRON[⏰ Cron Trigger<br/>0 9 * * 1<br/>Every Monday 9 AM]
-    EVENT[⚡ Event Trigger<br/>document.ingested]
-    
-    WF[Workflow Engine]
-    
-    CRON --> WF
-    EVENT --> WF
-    
-    WF --> S1[Step 1:<br/>Query Agent]
-    S1 --> S2[Step 2:<br/>Generate Report]
-    S2 --> S3[Step 3:<br/>Send to Slack]
-    
-    S3 --> LOG[(Execution Log)]
-    
-    style CRON fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    style EVENT fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    style WF fill:#0d47a1,stroke:#64b5f6,stroke-width:3px,color:#fff
-    style S1 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style S2 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style S3 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style LOG fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff
-    
-    linkStyle default stroke:#64b5f6,stroke-width:2px;
-```
+#### 4.7.2 Profile Service
 
-**Example Use Cases**:
-- **Daily Knowledge Digest**: Every morning, query most-accessed documents from yesterday and send summary to Slack
-- **Weekly Documentation Audit**: Check for outdated docs every Friday, generate report
-- **Auto-Archival**: Move documents older than 2 years to cold storage monthly
-- **Real-time Sync**: When Confluence page is updated, trigger re-ingestion workflow
+Manages user profiles, preferences, and personalization.
 
-**API Contract**: `/contracts/workflow-service.yaml`
+**Capabilities**:
+- User preferences storage
+- Query history tracking
+- Personalized recommendations
+- Team/organization management
 
-#### 4.6.2 Profile Service (Port 8007)
+#### 4.7.3 Temporal Service
 
-The **Profile Service** learns user behavior and preferences to personalize every interaction.
+Manages long-running workflows and scheduled tasks using Temporal.io.
 
-**Key Capabilities**:
-- **Behavioral Learning**: Automatically track which sources/topics users engage with
-- **Preference Management**: Explicit preferences (favorite agents, LLM models, UI themes)
-- **Context Injection**: Inject user profile into every query for personalized results
-- **Insights & Recommendations**: Surface relevant documents based on user patterns
+**Capabilities**:
+- Durable workflow execution
+- Scheduled jobs (e.g., daily summaries)
+- Retry policies and error handling
+- Workflow history and visibility
 
-```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
-flowchart TD
-    USER[👤 User Interaction]
-    
-    TRACK[📊 Tracking Layer]
-    USER --> TRACK
-    
-    TRACK --> T1[Query History]
-    TRACK --> T2[Source Clicks]
-    TRACK --> T3[Session Duration]
-    TRACK --> T4[Feedback +/-]
-    
-    T1 & T2 & T3 & T4 --> LEARN[🧠 Learning Engine]
-    
-    LEARN --> P1[Topic Interests<br/>Architecture: 85%]
-    LEARN --> P2[Preferred Sources<br/>Confluence: 70%]
-    LEARN --> P3[Expertise Level<br/>Advanced]
-    LEARN --> P4[Best Response Time<br/>Morning]
-    
-    P1 & P2 & P3 & P4 --> PROFILE[(User Profile<br/>JSONB Storage)]
-    
-    PROFILE --> CTX[Context Injector]
-    
-    CTX --> QUERY[🔍 Enhanced Query]
-    
-    style USER fill:#1a237e,stroke:#7986cb,stroke-width:3px,color:#fff
-    style TRACK fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style T1 fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style T2 fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style T3 fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style T4 fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style LEARN fill:#f57f17,stroke:#ffd54f,stroke-width:3px,color:#000
-    style P1 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style P2 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style P3 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style P4 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style PROFILE fill:#6a1b9a,stroke:#ce93d8,stroke-width:3px,color:#fff
-    style CTX fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    style QUERY fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px,color:#fff
-    
-    linkStyle default stroke:#64b5f6,stroke-width:2px;
-```
+#### 4.7.4 ACL Service
 
-**Personalization Features**:
-- **Smart Routing**: Route queries to agents/models user prefers
-- **Relevance Boosting**: Boost documents from sources user trusts
-- **Proactive Suggestions**: "Based on your recent searches, you might be interested in..."
-- **Adaptive UI**: Customize UI based on usage patterns (power user vs beginner)
+Fine-grained access control for documents and resources.
 
-**API Contract**: `/contracts/profile-service.yaml`
+**Capabilities**:
+- Document-level permissions
+- Team-based access control
+- Role-based authorization
+- Audit trail of access events
 
-#### 4.6.3 Temporal Service (Port 8008)
+#### 4.7.5 CDN Service
 
-The **Temporal Service** enables "time travel" queries and complete version history for all documents.
+Content delivery network integration for distributed content.
 
-**Key Capabilities**:
-- **Automatic Versioning**: Every document update creates a new version with diff
-- **Time-based Queries**: "Show me this document as it existed last month"
-- **Timeline Visualization**: See complete evolution of documents over time
-- **Rollback Support**: Restore previous versions with full audit trail
+**Capabilities**:
+- Multi-CDN provider support (Cloudflare, Fastly, AWS)
+- Cache invalidation
+- Geographic routing
+- Cost optimization
 
-```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
-flowchart LR
-    DOC[📄 Document]
-    
-    DOC --> V1[Version 1<br/>Jan 2025<br/>Created]
-    V1 --> V2[Version 2<br/>Feb 2025<br/>Updated]
-    V2 --> V3[Version 3<br/>Mar 2025<br/>Updated]
-    V3 --> V4[Version 4<br/>CURRENT<br/>Dec 2025]
-    
-    USER[👤 User Query:<br/>'Show me as of Feb 2025']
-    
-    USER --> TEMPORAL[Temporal Engine]
-    TEMPORAL --> V2
-    
-    V2 --> RESULT[Return Version 2]
-    
-    DIFF[Diff Engine]
-    V2 -.->|Compare| DIFF
-    V3 -.->|Compare| DIFF
-    
-    DIFF --> CHANGES[Show Changes:<br/>+ Added 3 sections<br/>- Removed 1 paragraph<br/>~ Modified 2 headings]
-    
-    style DOC fill:#1a237e,stroke:#7986cb,stroke-width:3px,color:#fff
-    style V1 fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style V2 fill:#01579b,stroke:#4fc3f7,stroke-width:3px,color:#fff
-    style V3 fill:#0277bd,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style V4 fill:#0288d1,stroke:#4fc3f7,stroke-width:3px,color:#000
-    style USER fill:#1b5e20,stroke:#81c784,stroke-width:3px,color:#fff
-    style TEMPORAL fill:#f57f17,stroke:#ffd54f,stroke-width:3px,color:#000
-    style RESULT fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px,color:#fff
-    style DIFF fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    style CHANGES fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff
-    
-    linkStyle default stroke:#64b5f6,stroke-width:2px;
-```
+#### 4.7.6 Search Engine
 
-**Use Cases**:
-- **Compliance & Audit**: "What did the security policy say on Jan 1, 2025?"
-- **Debugging**: "When did this API documentation change?"
-- **Research**: "How has our architecture evolved over the past year?"
-- **Recovery**: "The latest version has errors, rollback to last week's version"
+Advanced search capabilities with vector and keyword search.
 
-**API Contract**: `/contracts/temporal-service.yaml`
-
-#### 4.6.4 Services Integration Flow
-
-```mermaid
-%%{init: {'theme':'dark', 'themeVariables': {'actorTextColor':'#fff', 'noteBkgColor':'#1a237e', 'noteTextColor':'#fff'}}}%%
-sequenceDiagram
-    participant User
-    participant API as RAG Core API
-    participant Profile as Profile Service
-    participant Workflow as Workflow Service
-    participant Temporal as Temporal Service
-    participant DB as PostgreSQL
-    
-    User->>API: Query: "Latest architecture changes"
-    
-    API->>Profile: GET /api/v1/profile/me/context
-    Profile->>DB: Fetch user preferences
-    Profile-->>API: {interests: [architecture], expertise: advanced}
-    
-    API->>Temporal: POST /api/v1/search/time-range<br/>{query, start: last_30_days}
-    Temporal->>DB: Query version history
-    Temporal-->>API: [10 changed documents with diffs]
-    
-    API->>Profile: POST /api/v1/learning/interaction<br/>{query, clicked_sources}
-    Profile->>DB: Update behavioral data
-    
-    API-->>User: Personalized results with timeline
-    
-    Note over Workflow: Scheduled Task Triggers
-    Workflow->>Temporal: GET /api/v1/stats/versioning?time_range=7d
-    Temporal-->>Workflow: {documents_changed: 45, top_authors: [...]}
-    
-    Workflow->>API: POST /api/v1/query<br/>"Generate weekly summary"
-    API-->>Workflow: Summary with statistics
-    
-    Workflow->>User: Send Slack notification<br/>Weekly Architecture Digest
-```
+**Capabilities**:
+- Vector similarity search
+- Full-text keyword search
+- Graph-based concept search
+- Hybrid ranking (RRF)
 
 ---
 
@@ -1137,10 +1028,10 @@ sequenceDiagram
 ### 5.1 End-to-End Data Flow with Monitoring
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     %% Title: End-to-End Data Flow with Monitoring
-    subgraph "Ingestion Flow"
+    subgraph Box1["Ingestion Flow"]
         direction TB
         UP[📤 Upload<br/>Document]
         PARSE[📖 Parse<br/>Content]
@@ -1150,7 +1041,7 @@ flowchart TD
         UP --> PARSE --> CHUNK --> EMBED --> STORE
     end
     
-    subgraph "Query Flow"
+    subgraph Box2["Query Flow"]
         direction TB
         QRY[🎤 User<br/>Query]
         CACHE{💾 Check<br/>Cache}
@@ -1164,14 +1055,14 @@ flowchart TD
         GEN --> RESP
     end
     
-    subgraph "Storage Layer"
+    subgraph Box3["Storage Layer"]
         direction TB
         PG[(🗄️ PostgreSQL<br/>Metadata)]
         NEO[(🕸️ Neo4j<br/>Vectors + Graph)]
         VAL[(💾 Valkey<br/>Cache)]
     end
     
-    subgraph "Monitoring Flow"
+    subgraph Box4["Monitoring Flow"]
         direction TB
         METRICS[📊 Metrics<br/>Collection]
         LOGS[📝 Log<br/>Aggregation]
@@ -1202,32 +1093,40 @@ flowchart TD
     NEO -.->|Logs| LOGS
     VAL -.->|Logs| LOGS
     
-    style UP fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style PARSE fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style CHUNK fill:#0277bd,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style EMBED fill:#0288d1,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style STORE fill:#039be5,stroke:#81d4fa,stroke-width:2px,color:#fff
+    %% Styling
+    classDef titleStyle fill:#263238,fill-opacity:0.3,stroke:#64b5f6,stroke-width:2px,font-weight:bold,font-size:16px;
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+
+    class Box1,Box2,Box3,Box4,Box5 boxStyle;
+
+    style UP fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px
+    style PARSE fill:#0277bd,fill-opacity:0.18,stroke:#4fc3f7,stroke-width:2px
+    style CHUNK fill:#006064,fill-opacity:0.18,stroke:#4db6ac,stroke-width:2px
+    style EMBED fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px
+    style STORE fill:#039be5,fill-opacity:0.18,stroke:#81d4fa,stroke-width:2px
     
-    style QRY fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style CACHE fill:#2e7d32,stroke:#a5d6a7,stroke-width:2px,color:#fff
-    style SEARCH fill:#388e3c,stroke:#66bb6a,stroke-width:2px,color:#fff
-    style GEN fill:#43a047,stroke:#9ccc65,stroke-width:2px,color:#fff
-    style RESP fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px,color:#fff
+    style QRY fill:#1b5e20,fill-opacity:0.18,stroke:#81c784,stroke-width:2px
+    style CACHE fill:#2e7d32,fill-opacity:0.18,stroke:#a5d6a7,stroke-width:2px
+    style SEARCH fill:#388e3c,fill-opacity:0.18,stroke:#66bb6a,stroke-width:2px
+    style GEN fill:#43a047,fill-opacity:0.18,stroke:#9ccc65,stroke-width:2px
+    style RESP fill:#2e7d32,fill-opacity:0.18,stroke:#a5d6a7,stroke-width:3px
     
-    style PG fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff
-    style NEO fill:#7b1fa2,stroke:#ba68c8,stroke-width:2px,color:#fff
-    style VAL fill:#8e24aa,stroke:#ab47bc,stroke-width:2px,color:#fff
+    style PG fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px
+    style NEO fill:#7b1fa2,fill-opacity:0.18,stroke:#ba68c8,stroke-width:2px
+    style VAL fill:#8e24aa,fill-opacity:0.18,stroke:#ab47bc,stroke-width:2px
     
-    style METRICS fill:#e65100,stroke:#ffb74d,stroke-width:2px,color:#fff
-    style LOGS fill:#ef6c00,stroke:#ffa726,stroke-width:2px,color:#fff
-    style TRACES fill:#f57c00,stroke:#ff9800,stroke-width:2px,color:#fff
-    style ALERTS fill:#ff6f00,stroke:#ffab40,stroke-width:2px,color:#fff
+    style METRICS fill:#e65100,fill-opacity:0.18,stroke:#ffb74d,stroke-width:2px
+    style LOGS fill:#ef6c00,fill-opacity:0.18,stroke:#ffa726,stroke-width:2px
+    style TRACES fill:#f57c00,fill-opacity:0.18,stroke:#ff9800,stroke-width:2px
+    style ALERTS fill:#ff6f00,fill-opacity:0.18,stroke:#ffab40,stroke-width:2px
+
+    linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 
 ### 5.2 Query Data Flow (Detailed)
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     %% Title: Query Data Flow - User Query to Response
     Q["🎤 User Query<br/>'How does authentication work in RAGE?'"]
@@ -1260,10 +1159,16 @@ flowchart TD
     AGG --> LEARN
     LEARN --> RESP
     
-    classDef reception fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff;
-    classDef cache fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000;
-    classDef agent fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff;
-    classDef result fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff;
+    %% Styling
+    classDef titleStyle fill:#263238,fill-opacity:0.3,stroke:#64b5f6,stroke-width:2px,font-weight:bold,font-size:16px;
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+
+    class Box1,Box2,Box3,Box4,Box5 boxStyle;
+
+    classDef reception fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px,color:#fff;
+    classDef cache fill:#f57f17,fill-opacity:0.18,stroke:#ffd54f,stroke-width:2px;
+    classDef agent fill:#1b5e20,fill-opacity:0.18,stroke:#81c784,stroke-width:2px,color:#fff;
+    classDef result fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px,color:#fff;
     
     class Q,QR reception;
     class CACHE,CACHED cache;
@@ -1276,7 +1181,7 @@ flowchart TD
 ### 5.3 Document Ingestion Data Flow
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TD
     %% Title: Document Ingestion Pipeline - PDF to Knowledge Graph
     UPL["📤 PDF Upload<br/>'RAGE_Architecture.pdf'"]
@@ -1322,11 +1227,11 @@ flowchart TD
     POST --> DONE
     
     %% Class Definitions (added for Mermaid rendering correctness)
-    classDef upload fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff;
-    classDef process fill:#0277bd,stroke:#4fc3f7,stroke-width:2px,color:#fff;
-    classDef storage fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff;
-    classDef graphNode fill:#7b1fa2,stroke:#ba68c8,stroke-width:2px,color:#fff;
-    classDef complete fill:#2e7d32,stroke:#a5d6a7,stroke-width:2px,color:#fff;
+    classDef upload fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px,color:#fff;
+    classDef process fill:#0277bd,fill-opacity:0.18,stroke:#4fc3f7,stroke-width:2px,color:#fff;
+    classDef storage fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px,color:#fff;
+    classDef graphNode fill:#7b1fa2,fill-opacity:0.18,stroke:#ba68c8,stroke-width:2px,color:#fff;
+    classDef complete fill:#2e7d32,fill-opacity:0.18,stroke:#a5d6a7,stroke-width:2px,color:#fff;
     
     %% Class Assignments
     class UPL,VAL upload;
@@ -1365,9 +1270,9 @@ flowchart TD
     API2 --> SHARED
     API3 --> SHARED
     
-    classDef lb fill:#0277bd,stroke:#4fc3f7,stroke-width:3px,color:#fff;
-    classDef api fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff;
-    classDef shared fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff;
+    classDef lb fill:#0277bd,fill-opacity:0.18,stroke:#4fc3f7,stroke-width:3px,color:#fff;
+    classDef api fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px,color:#fff;
+    classDef shared fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px,color:#fff;
     
     class LB lb;
     class API1,API2,API3 api;
@@ -1489,8 +1394,8 @@ flowchart TD
     L6 --> L7
     L7 --> L8
     
-    classDef title fill:#1a237e,stroke:#7986cb,stroke-width:3px,color:#fff;
-    classDef layer fill:#4a148c,stroke:#ce93d8,stroke-width:2px,color:#fff;
+    classDef title fill:#1a237e,fill-opacity:0.18,stroke:#7986cb,stroke-width:3px,color:#fff;
+    classDef layer fill:#4a148c,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px,color:#fff;
     
     class TITLE title;
     class L1,L2,L3,L4,L5,L6,L7,L8 layer;
@@ -1528,10 +1433,10 @@ flowchart TD
     JWT --> SESS
     SESS --> RESP
     
-    classDef request fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff;
-    classDef process fill:#4a148c,stroke:#ce93d8,stroke-width:2px,color:#fff;
-    classDef success fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff;
-    classDef error fill:#b71c1c,stroke:#ef5350,stroke-width:2px,color:#fff;
+    classDef request fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px,color:#fff;
+    classDef process fill:#4a148c,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px,color:#fff;
+    classDef success fill:#1b5e20,fill-opacity:0.18,stroke:#81c784,stroke-width:2px,color:#fff;
+    classDef error fill:#b71c1c,fill-opacity:0.18,stroke:#ef5350,stroke-width:2px,color:#fff;
     
     class REQ request;
     class VAL,QRY,PWD,JWT,SESS process;
@@ -1576,10 +1481,10 @@ RETURN COALESCE(
 ### 8.1 Comprehensive Monitoring Stack with Netdata
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 60, 'curve': 'basis'}}}%%
 flowchart TD
     %% Title: Comprehensive Monitoring Stack
-    
+
     subgraph CONTAINERS["🐳 All RAGE Containers"]
         direction TB
         C1["⚡ API Servers (3x)<br/>● Netdata Agent"]
@@ -1587,37 +1492,37 @@ flowchart TD
         C3["💾 Databases (3x)<br/>PostgreSQL • Neo4j • Valkey<br/>● Netdata Agent"]
         C4["🦙 LLM Services<br/>Ollama • Router<br/>● Netdata Agent"]
     end
-    
+
     CONTAINERS -->|Stream Metrics| COLLECT
     CONTAINERS -.->|Send Traces| TRACE
     CONTAINERS -.->|Send Logs| LOGS
-    
+
     subgraph COLLECT["📊 Metrics Collection"]
         direction TB
         NET["Netdata Parent :19999<br/>Aggregates all agents<br/>Real-time dashboards<br/>24h history"]
         PROM["Prometheus :9090<br/>Long-term storage: 90d<br/>PromQL queries<br/>Alert rules"]
         NET -->|Export| PROM
     end
-    
+
     subgraph TRACE["🔍 Distributed Tracing"]
         JAEGER["Jaeger :16686<br/>Request flow visualization<br/>Latency analysis<br/>Dependency mapping"]
     end
-    
+
     subgraph LOGS["📝 Log Aggregation"]
         LOKI["Loki :3100<br/>Log aggregation<br/>LogQL queries<br/>30-day retention"]
     end
-    
+
     COLLECT -->|Query| VIZ
     TRACE -->|Query| VIZ
     LOGS -->|Query| VIZ
-    
+
     subgraph VIZ["📈 Visualization"]
         GRAF["Grafana :3000<br/><br/>Dashboards:<br/>System • API • Database<br/>Agents • LLM Costs<br/>Cache Hits • Latency"]
     end
     
     PROM -->|Fire Alerts| ALERT
     NET -->|Fire Alerts| ALERT
-    
+
     subgraph ALERT["🚨 Alerting"]
         direction TB
         AM["Alert Manager<br/>Route • Dedupe • Silence"]
@@ -1625,32 +1530,22 @@ flowchart TD
         AM -->|Notify| N2["💬 Slack"]
         AM -->|Notify| N3["📟 PagerDuty"]
     end
+
+    %% Styling
+    classDef titleStyle fill:#263238,fill-opacity:0.3,stroke:#64b5f6,stroke-width:2px,font-weight:bold,font-size:16px;
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+
+    class CONTAINERS,COLLECT,TRACE,LOGS,VIZ,ALERT boxStyle;
     
-    style C1 fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style C2 fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style C3 fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff
-    style C4 fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
-    
-    style NET fill:#1a237e,stroke:#7986cb,stroke-width:3px,color:#fff
-    style PROM fill:#e65100,stroke:#ffb74d,stroke-width:3px,color:#fff
-    style JAEGER fill:#00838f,stroke:#4dd0e1,stroke-width:3px,color:#fff
-    style LOKI fill:#00695c,stroke:#4db6ac,stroke-width:3px,color:#fff
-    style GRAF fill:#f57c00,stroke:#ffa726,stroke-width:4px,color:#fff
-    style AM fill:#b71c1c,stroke:#ef5350,stroke-width:3px,color:#fff
-    style N1 fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style N2 fill:#0277bd,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style N3 fill:#c62828,stroke:#ef5350,stroke-width:2px,color:#fff
-    
-    linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 
 ### 8.2 Netdata Per-Container Metrics
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 60, 'curve': 'basis'}}}%%
 graph LR
     %% Title: Netdata Per-Container Metrics
-    subgraph "rage-api-1 Container"
+    subgraph Box1["rage-api-1 Container"]
         direction TB
         API_PROC[⚙️ Process Metrics<br/>• CPU usage<br/>• Memory RSS<br/>• Thread count<br/>• File descriptors]
         
@@ -1667,17 +1562,23 @@ graph LR
     API_CUSTOM --> NETDATA_AGENT
     
     NETDATA_AGENT -->|Stream to Parent| NETDATA_PARENT[📊 Netdata Parent<br/>Central Instance]
-    
-    style API_PROC fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style API_APP fill:#01579b,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style API_SYS fill:#0277bd,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style API_CUSTOM fill:#0288d1,stroke:#4fc3f7,stroke-width:2px,color:#fff
-    style NETDATA_AGENT fill:#1a237e,stroke:#7986cb,stroke-width:3px,color:#fff
-    style NETDATA_PARENT fill:#4a148c,stroke:#ce93d8,stroke-width:3px,color:#fff
+
+    %% Styling
+    classDef titleStyle fill:#263238,fill-opacity:0.3,stroke:#64b5f6,stroke-width:2px,font-weight:bold,font-size:16px;
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+
+    class Box1 boxStyle;
+
+    style API_PROC fill:#0d47a1,fill-opacity:0.18,stroke:#64b5f6,stroke-width:2px,color:#fff
+    style API_APP fill:#1b5e20,fill-opacity:0.18,stroke:#81c784,stroke-width:2px,color:#fff
+    style API_SYS fill:#6a1b9a,fill-opacity:0.18,stroke:#ce93d8,stroke-width:2px,color:#fff
+    style API_CUSTOM fill:#bf360c,fill-opacity:0.18,stroke:#ff8a65,stroke-width:2px,color:#fff
+    style NETDATA_AGENT fill:#1a237e,fill-opacity:0.18,stroke:#7986cb,stroke-width:3px,color:#fff
+    style NETDATA_PARENT fill:#4a148c,fill-opacity:0.18,stroke:#ce93d8,stroke-width:3px,color:#fff
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 
-### 8.2 Key Metrics Tracked
+### 8.3 Key Metrics Tracked
 
 **System Metrics** (per container):
 - CPU usage (user, system, idle)
@@ -1714,7 +1615,7 @@ LLM:
   - Fallback rate
 ```
 
-### 8.3 Alerting Rules
+### 8.4 Alerting Rules
 
 ```yaml
 # prometheus/alerts.yml

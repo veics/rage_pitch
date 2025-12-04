@@ -27,7 +27,7 @@ RAGE implements **comprehensive observability** across all layers using a modern
 ### Monitoring Stack
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "Application Layer"
         APP1[RAG Core]
@@ -89,13 +89,13 @@ graph TB
     ALERT --> SLACK
     ALERT --> EMAIL
     
-    classDef net fill:#00bfa5,stroke:#00695c,stroke-width:1px
-    classDef prom fill:#e6522c,stroke:#a63b1e,stroke-width:1px
-    classDef loki fill:#f5a623,stroke:#c77800,stroke-width:1px
-    classDef jaeger fill:#60d0e4,stroke:#2c97a3,stroke-width:1px
-    classDef graf fill:#f46800,stroke:#b84300,stroke-width:1px
-    classDef admin fill:#1976d2,stroke:#0d47a1,stroke-width:1px
-    classDef alert fill:#ff5722,stroke:#bf360c,stroke-width:1px
+    classDef net fill:#00bfa5,stroke:#00695c,stroke-width:2px
+    classDef prom fill:#e6522c,stroke:#a63b1e,stroke-width:2px
+    classDef loki fill:#f5a623,stroke:#c77800,stroke-width:2px
+    classDef jaeger fill:#60d0e4,stroke:#2c97a3,stroke-width:2px
+    classDef graf fill:#f46800,stroke:#b84300,stroke-width:2px
+    classDef admin fill:#1976d2,stroke:#0d47a1,stroke-width:2px
+    classDef alert fill:#ff5722,stroke:#bf360c,stroke-width:2px
 
     class NET net
     class PROM prom
@@ -106,6 +106,9 @@ graph TB
     class ALERT alert
     
     linkStyle default stroke:#64b5f6,stroke-width:2px;
+    
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+    class "Application Layer","Metrics Collection","Logs","Traces","Alerting" boxStyle;
 ```
 
 ### Three Pillars of Observability
@@ -138,7 +141,7 @@ graph TB
 ### Architecture: Parent-Child Deployment
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "Netdata Parent"
         NP[Netdata Parent<br/>Aggregates all metrics<br/>Port: 19999]
@@ -188,13 +191,16 @@ graph TB
     
     NP --> PROM[Prometheus<br/>Scrapes /api/v1/allmetrics]
     
-    style NP fill:#00695c,stroke:#4db6ac,stroke-width:3px,color:#fff
-    style NC1 fill:#00838f,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style NC2 fill:#00838f,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style NC3 fill:#00838f,stroke:#4dd0e1,stroke-width:2px,color:#fff
-    style PROM fill:#bf360c,stroke:#ff8a65,stroke-width:2px,color:#fff
+    style NP fill:#00695c,stroke:#4db6ac,stroke-width:3px
+    style NC1 fill:#00838f,stroke:#4dd0e1,stroke-width:2px
+    style NC2 fill:#00838f,stroke:#4dd0e1,stroke-width:2px
+    style NC3 fill:#00838f,stroke:#4dd0e1,stroke-width:2px
+    style PROM fill:#bf360c,stroke:#ff8a65,stroke-width:2px
     
     linkStyle default stroke:#64b5f6,stroke-width:2px;
+    
+    classDef boxStyle fill:none,stroke:#64b5f6,stroke-width:2px,stroke-dasharray:5 5;
+    class "Netdata Parent","Container Nodes" boxStyle;
 ```
 
 ### Netdata Configuration
@@ -849,7 +855,7 @@ async def hybrid_search(query: str, top_k: int = 10):
 Beta chart (if supported): Latency Distribution
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 xychart-beta
   title "Latency Distribution (ms)"
   x-axis 0, 200, 400, 600, 800

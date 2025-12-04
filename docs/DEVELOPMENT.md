@@ -106,7 +106,7 @@ AI: [Generates complete implementation with error handling, logging, ACL checks,
 ### AI Development Workflow
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     START[Define Feature] --> CONTRACT[1. Write OpenAPI Contract]
     CONTRACT --> PROMPT[2. Create AI Prompt]
@@ -126,11 +126,11 @@ graph TB
     TEST -->|Pass| DOC[8. AI Generate Docs]
     DOC --> MERGE[9. Merge to Main]
     
-    style AI_GEN fill:#1b5e20,stroke:#81c784,stroke-width:2px,color:#fff
-    style REVIEW fill:#f57f17,stroke:#ffd54f,stroke-width:2px,color:#000
-    style TEST fill:#0d47a1,stroke:#64b5f6,stroke-width:2px,color:#fff
-    style DOC fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px,color:#fff
-    style MERGE fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px,color:#fff
+    style AI_GEN fill:#1b5e20,stroke:#81c784,stroke-width:2px
+    style REVIEW fill:#f57f17,stroke:#ffd54f,stroke-width:2px
+    style TEST fill:#0d47a1,stroke:#64b5f6,stroke-width:2px
+    style DOC fill:#6a1b9a,stroke:#ce93d8,stroke-width:2px
+    style MERGE fill:#2e7d32,stroke:#a5d6a7,stroke-width:3px
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 
@@ -427,7 +427,7 @@ $ dredd contracts/rag-core.yaml http://localhost:8000
 A **vertical slice** is a complete feature that cuts through all layers:
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 flowchart TB
   %% Title: Vertical Slice Layers
   subgraph VerticalSlice[Vertical Slice]
@@ -799,7 +799,7 @@ export const useTheme = () => useContext(ThemeContext);
 ### Test Pyramid
 
 ```mermaid
-%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}}}%%
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph BT
     %% Title: Test Pyramid - 80-15-5 Distribution
     Unit["📦 Unit Tests<br/>80%<br/>Business logic"]:::unit
@@ -809,9 +809,9 @@ graph BT
     Unit --> Integration
     Integration --> E2E
     
-    classDef unit fill:#1b5e20,stroke:#81c784,stroke-width:3px,color:#fff;
-    classDef integration fill:#f57f17,stroke:#ffd54f,stroke-width:3px,color:#000;
-    classDef e2e fill:#bf360c,stroke:#ff8a65,stroke-width:3px,color:#fff;
+    classDef unit fill:#1b5e20,stroke:#81c784,stroke-width:3px;
+    classDef integration fill:#f57f17,stroke:#ffd54f,stroke-width:3px;
+    classDef e2e fill:#bf360c,stroke:#ff8a65,stroke-width:3px;
     linkStyle default stroke:#64b5f6,stroke-width:2px;
 ```
 

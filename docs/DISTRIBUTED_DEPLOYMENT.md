@@ -102,6 +102,7 @@ sudo ufw enable
 **Scenario**: ACME Corp with offices in US West, US East, and EU
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "US West (Primary)"
         USW1[RAGE Node<br/>us-west-1]
@@ -161,6 +162,7 @@ network:
 **Scenario**: Enterprise with central datacenter + remote offices
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "Central Datacenter"
         HUB[RAGE Hub<br/>Primary Node]
@@ -251,6 +253,7 @@ network:
 **Scenario**: Partner ecosystem (ACME, Beta Industries, Gamma LLC)
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "ACME Corp"
         A1[RAGE Node A]
@@ -608,6 +611,7 @@ sub vcl_deliver {
 ### Edge Node Architecture
 
 ```mermaid
+%%{init: {'theme':'dark', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40, 'curve': 'basis'}, 'themeVariables': {'labelBackground':'rgba(38, 50, 56, 0.1)'}}}%%
 graph TB
     subgraph "Edge Node"
         NGINX[Nginx<br/>Reverse Proxy]
